@@ -11,8 +11,8 @@ const categories = [
 
 export default function Routine() {
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Stack.Screen options={{ title: "운동 시작" }} />
+    <View style={{ flex: 1, paddingTop: 60, padding: 20 }}>
+      <Stack.Screen options={{ title: "루틴" }} />
 
       <Text style={{ fontSize: 24, fontWeight: "600", marginBottom: 20 }}>
         운동 카테고리
@@ -23,7 +23,7 @@ export default function Routine() {
           key={c.id}
           style={{
             padding: 16,
-            backgroundColor: "#eee",
+            backgroundColor: "#dddddd",
             borderRadius: 10,
             marginBottom: 12,
           }}

@@ -1,3 +1,4 @@
+import { PATH } from "@/constants/path";
 import { Stack, useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -12,24 +13,29 @@ export default function HomeScreen() {
       <Text style={styles.subText}>오늘도 한 번 달려볼까요?</Text>
 
       <View style={styles.grid}>
-        {/* <HomeButton
-          title="📘 운동 루틴"
-          onPress={() => router.push("(tabs)/routine")}
-        /> */}
-        {/* <HomeButton
-          title="📅 최근 운동"
-          onPress={() => router.push("/recent")}
+        <HomeButton
+          title="운동 루틴"
+          onPress={() => router.navigate(PATH.routine)}
         />
         <HomeButton
-          title="📂 카테고리"
-          onPress={() => router.push("/categories")}
-        /> */}
+          title="최근 운동"
+          onPress={() => router.navigate(PATH.record)}
+        />
+        <HomeButton
+          title="카테고리"
+          onPress={() => router.navigate(PATH.category)}
+        />
       </View>
     </View>
   );
 }
 
-function HomeButton({ title, onPress }) {
+type ButtonProps = {
+  title: string;
+  onPress: () => void;
+};
+
+function HomeButton({ title, onPress }: ButtonProps) {
   return (
     <TouchableOpacity style={styles.button} onPress={onPress}>
       <Text style={styles.buttonText}>{title}</Text>
