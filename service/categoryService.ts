@@ -1,3 +1,4 @@
+import { ICategory } from "@/interface/category";
 import { API_URL } from "@/utils/config";
 
 export async function addCategory(category: string) {
@@ -32,7 +33,7 @@ export async function deleteCategory(category: string) {
   }
 }
 
-export async function getCategory() {
+export async function getCategory(): Promise<ICategory[]> {
   try {
     const result = await fetch(`${API_URL}/category`, {
       method: "get",
@@ -40,8 +41,7 @@ export async function getCategory() {
     const data = await result.json();
     return data;
   } catch (e) {
-    console.error(e);
-    return "fail";
+    throw e;
   }
 }
 
