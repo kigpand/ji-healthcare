@@ -5,6 +5,7 @@ import {
 } from "@react-navigation/native";
 import "react-native-reanimated";
 
+import Header from "@/components/layout/Header";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
@@ -20,6 +21,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <QueryClientProvider client={queryClient}>
+        <Header />
         <Stack
           screenOptions={{
             headerShown: false,
