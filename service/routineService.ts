@@ -1,16 +1,18 @@
 import type { IRoutine } from "@/interface/routine";
 import { API_URL } from "@/utils/config";
 
-export async function getRoutine() {
+export async function getRoutine(categoryId?: string): Promise<IRoutine[]> {
   try {
-    const result = await fetch(`${API_URL}/routine`, {
-      method: "get",
-    });
-    console.log("dsadsadsa");
+    const result = await fetch(
+      `${API_URL}/routine${categoryId ? `?categoryId=${categoryId}` : ""}`,
+      {
+        method: "get",
+      }
+    );
     const data = await result.json();
     return data;
   } catch (e) {
-    return e;
+    throw e;
   }
 }
 

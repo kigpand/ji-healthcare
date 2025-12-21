@@ -1,36 +1,50 @@
+import RoutineCategoryList from "@/components/routine/RoutineCategoryList";
+import RoutineListContainer from "@/components/routine/RoutineListContainer";
+import { ICategory } from "@/interface/category";
 import { Stack } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
-
-const categories = [
-  { id: "chest", name: "가슴" },
-  { id: "back", name: "등" },
-  { id: "shoulder", name: "어깨" },
-  { id: "legs", name: "하체" },
-  { id: "arms", name: "팔" },
-];
+import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function Routine() {
+  const [selectedCategory, setSelectedCategory] = useState<ICategory | null>(
+    null
+  );
+
   return (
-    <View style={{ flex: 1, paddingTop: 60, padding: 20 }}>
+    <View style={styles.container}>
       <Stack.Screen options={{ title: "루틴" }} />
+      <Text style={styles.sectionTitle}>운동 카테고리</Text>
+      <RoutineCategoryList
+        selectedCategoryId={selectedCategory}
+        handleChangeCategory={setSelectedCategory}
+      />
 
-      <Text style={{ fontSize: 24, fontWeight: "600", marginBottom: 20 }}>
-        운동 카테고리
-      </Text>
+      <View style={styles.routineHeader}>
+        <Text style={styles.sectionTitle}>
+          {selectedCategory ? `${selectedCategory.category} 루틴` : "루틴 목록"}
+        </Text>
+      </View>
 
-      {categories.map((c) => (
-        <TouchableOpacity
-          key={c.id}
-          style={{
-            padding: 16,
-            backgroundColor: "#dddddd",
-            borderRadius: 10,
-            marginBottom: 12,
-          }}
-        >
-          <Text style={{ fontSize: 18 }}>{c.name}</Text>
-        </TouchableOpacity>
-      ))}
+      <RoutineListContainer selectedCategory={selectedCategory} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: "#fff",
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+  routineHeader: {
+    marginTop: 24,
+    marginBottom: 12,
+  },
+});
