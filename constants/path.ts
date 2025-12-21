@@ -3,4 +3,5 @@ export const PATH = {
   routine: "/(tabs)/routine",
   category: "/(tabs)/category",
   record: "/(tabs)/record",
+  play: "/(tabs)/play",
 } as const;

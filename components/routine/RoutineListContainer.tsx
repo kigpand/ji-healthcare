@@ -1,10 +1,14 @@
+import { PATH } from "@/constants/path";
 import { useRoutine } from "@/hooks/queries/useRoutine";
 import { ICategory } from "@/interface/category";
+import { IRoutine } from "@/interface/routine";
+import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -13,6 +17,7 @@ type Props = {
 };
 
 export default function RoutineListContainer({ selectedCategory }: Props) {
+  const router = useRouter();
   const {
     data: routines,
     isLoading: routineLoading,
@@ -23,6 +28,13 @@ export default function RoutineListContainer({ selectedCategory }: Props) {
 
   if (routineError) return <Text>루틴을 불러오지 못했습니다.</Text>;
 
+  function handleRoutineStart(item: IRoutine) {
+    router.push({
+      pathname: PATH.play,
+      params: { routineId: item.id.toString() },
+    });
+  }
+
   return (
     <FlatList
       data={routines ?? []}
@@ -30,6 +42,9 @@ export default function RoutineListContainer({ selectedCategory }: Props) {
       renderItem={({ item }) => (
         <View style={styles.routineCard}>
           <Text style={styles.routineTitle}>{item.title}</Text>
+          <TouchableOpacity onPress={() => handleRoutineStart(item)}>
+            <Text style={styles.routineStartButton}>시작</Text>
+          </TouchableOpacity>
         </View>
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -47,10 +62,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   routineTitle: {
     fontSize: 18,
     fontWeight: "600",
+  },
+  routineStartButton: {
+    backgroundColor: "#2563eb",
+    color: "white",
+    padding: 8,
+    borderRadius: 6,
   },
   separator: {
     height: 12,
