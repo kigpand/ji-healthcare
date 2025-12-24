@@ -1,10 +1,10 @@
 import type { IRoutine } from "@/interface/routine";
 import { API_URL } from "@/utils/config";
 
-export async function getRoutine(categoryId?: string): Promise<IRoutine[]> {
+export async function getRoutine(category?: string): Promise<IRoutine> {
   try {
     const result = await fetch(
-      `${API_URL}/routine${categoryId ? `?categoryId=${categoryId}` : ""}`,
+      `${API_URL}/routine${category ? `?category=${category}` : ""}`,
       {
         method: "get",
       }

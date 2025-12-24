@@ -4,9 +4,14 @@ export interface IRoutineData {
   title: string;
 }
 
-export interface IRoutine {
+export interface IRoutineInfo {
   id: number;
   title: string;
   category: string;
+  date: string;
   routine: IRoutineData[];
+}
+
+export interface IRoutine {
+  routines: IRoutineInfo[];
 }

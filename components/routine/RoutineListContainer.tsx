@@ -1,7 +1,7 @@
 import { PATH } from "@/constants/path";
 import { useRoutine } from "@/hooks/queries/useRoutine";
 import { ICategory } from "@/interface/category";
-import { IRoutine } from "@/interface/routine";
+import { IRoutineInfo } from "@/interface/routine";
 import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -22,13 +22,13 @@ export default function RoutineListContainer({ selectedCategory }: Props) {
     data: routines,
     isLoading: routineLoading,
     isError: routineError,
-  } = useRoutine(selectedCategory?._id);
+  } = useRoutine(selectedCategory?.category);
 
   if (routineLoading) return <ActivityIndicator />;
 
   if (routineError) return <Text>루틴을 불러오지 못했습니다.</Text>;
 
-  function handleRoutineStart(item: IRoutine) {
+  function handleRoutineStart(item: IRoutineInfo) {
     router.push({
       pathname: PATH.play,
       params: { routineId: item.id.toString() },
@@ -37,7 +37,7 @@ export default function RoutineListContainer({ selectedCategory }: Props) {
 
   return (
     <FlatList
-      data={routines ?? []}
+      data={routines?.routines ?? []}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
         <View style={styles.routineCard}>
