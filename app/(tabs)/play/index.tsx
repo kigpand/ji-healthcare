@@ -1,16 +1,10 @@
 import { useRoutineDetail } from "@/hooks/queries/useRoutine";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-export default function Record() {
+export default function Play() {
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
   const { data: routineDetail } = useRoutineDetail(routineId);
-  console.log(routineId);
-
-  useEffect(() => {
-    console.log(routineDetail);
-  }, [routineDetail]);
 
   return (
     <View style={styles.container}>
