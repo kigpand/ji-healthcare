@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -10,14 +10,22 @@ import {
 
 type Props = {
   modalVisible: boolean;
+  initialValue: number;
   handleConfirmRestTime: (timer: string) => void;
 };
 
 export default function TimerModal({
   modalVisible,
+  initialValue,
   handleConfirmRestTime,
 }: Props) {
-  const [time, setTime] = useState<string>("60");
+  const [time, setTime] = useState<string>(initialValue.toString());
+
+  useEffect(() => {
+    if (modalVisible) {
+      setTime(initialValue.toString());
+    }
+  }, [modalVisible, initialValue]);
 
   return (
     <Modal visible={modalVisible} transparent animationType="fade">

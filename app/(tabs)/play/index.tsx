@@ -1,7 +1,7 @@
 import TimerModal from "@/components/modal/TimerModal";
 import { useRoutineDetail } from "@/hooks/queries/useRoutine";
-import { Stack, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
 export default function Play() {
@@ -9,6 +9,13 @@ export default function Play() {
   const { data: routineDetail } = useRoutineDetail(routineId);
   const [timer, setTimer] = useState(60);
   const [modalVisible, setModalVisible] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      setTimer(60);
+      setModalVisible(true);
+    }, []),
+  );
 
   const handleConfirmRestTime = (time: string) => {
     const parsed = parseInt(time, 10);
@@ -40,6 +47,7 @@ export default function Play() {
       <Text style={styles.restText}>세트 사이 휴식: {timer}초</Text>
       <TimerModal
         modalVisible={modalVisible}
+        initialValue={timer}
         handleConfirmRestTime={handleConfirmRestTime}
       />
     </View>
