@@ -12,12 +12,14 @@ type Props = {
   modalVisible: boolean;
   initialValue: number;
   handleConfirmRestTime: (timer: string) => void;
+  onClose?: () => void;
 };
 
 export default function TimerModal({
   modalVisible,
   initialValue,
   handleConfirmRestTime,
+  onClose,
 }: Props) {
   const [time, setTime] = useState<string>(initialValue.toString());
 
@@ -28,7 +30,12 @@ export default function TimerModal({
   }, [modalVisible, initialValue]);
 
   return (
-    <Modal visible={modalVisible} transparent animationType="fade">
+    <Modal
+      visible={modalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>휴식 시간을 설정하세요</Text>
@@ -46,7 +53,10 @@ export default function TimerModal({
             style={styles.confirmButton}
             onPress={() => handleConfirmRestTime(time)}
           >
-            <Text style={styles.confirmText}>확인</Text>
+            <Text style={styles.buttonText}>확인</Text>
+          </Pressable>
+          <Pressable style={styles.closeButton} onPress={onClose}>
+            <Text style={styles.buttonText}>취소</Text>
           </Pressable>
         </View>
       </View>
@@ -89,11 +99,18 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: "#2563eb",
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderRadius: 10,
     alignItems: "center",
   },
-  confirmText: {
+  closeButton: {
+    marginTop: 4,
+    backgroundColor: "#ff6d6d",
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  buttonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",

@@ -1,34 +1,15 @@
-import TimerModal from "@/components/modal/TimerModal";
 import { useRoutineDetail } from "@/hooks/queries/useRoutine";
-import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Stack, useLocalSearchParams } from "expo-router";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function Play() {
-  const { routineId } = useLocalSearchParams<{ routineId?: string }>();
+  const { routineId, timer } = useLocalSearchParams<{
+    routineId?: string;
+    timer?: string;
+  }>();
   const { data: routineDetail } = useRoutineDetail(routineId);
-  const [timer, setTimer] = useState(60);
-  const [modalVisible, setModalVisible] = useState(true);
-
-  useFocusEffect(
-    useCallback(() => {
-      setTimer(60);
-      setModalVisible(true);
-    }, []),
-  );
-
-  const handleConfirmRestTime = (time: string) => {
-    const parsed = parseInt(time, 10);
-    if (Number.isNaN(parsed) || parsed <= 0) {
-      Alert.alert(
-        "휴식 시간을 확인해주세요",
-        "1초 이상의 숫자를 입력해주세요."
-      );
-      return;
-    }
-    setTimer(parsed);
-    setModalVisible(false);
-  };
+  const parsingTimer = timer ? parseInt(timer, 10) : undefined;
 
   return (
     <View style={styles.container}>
@@ -44,12 +25,7 @@ export default function Play() {
       ) : (
         <Text style={styles.subtitle}>루틴을 선택해주세요.</Text>
       )}
-      <Text style={styles.restText}>세트 사이 휴식: {timer}초</Text>
-      <TimerModal
-        modalVisible={modalVisible}
-        initialValue={timer}
-        handleConfirmRestTime={handleConfirmRestTime}
-      />
+      <Text style={styles.restText}>세트 사이 휴식: {parsingTimer}초</Text>
     </View>
   );
 }
