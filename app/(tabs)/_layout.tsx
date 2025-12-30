@@ -27,7 +27,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="routine"
+        name="routine/index"
         options={{
           title: "운동 루틴",
           tabBarIcon: ({ color }) => (
@@ -36,7 +36,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="record"
+        name="record/index"
         options={{
           title: "최근 운동",
           tabBarIcon: ({ color }) => (
@@ -45,7 +45,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="category"
+        name="category/index"
         options={{
           title: "카테고리",
           tabBarIcon: ({ color }) => (
