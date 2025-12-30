@@ -1,3 +1,4 @@
+import CompletionModal from "@/components/modal/CompletionModal";
 import CountdownModal from "@/components/modal/CountdownModal";
 import PlayCard from "@/components/play/PlayCard";
 import { useRoutineDetail } from "@/hooks/queries/useRoutine";
@@ -154,6 +155,7 @@ export default function Play() {
         seconds={countdown}
         onStartNext={handleStartNextSet}
       />
+      <CompletionModal visible={finished} />
     </View>
   );
 }
