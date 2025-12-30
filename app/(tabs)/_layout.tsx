@@ -20,19 +20,39 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "운동 기록",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <IconSymbol size={26} name="house.fill" color={color} />
           ),
         }}
       />
-      {/* <Tabs.Screen
-        name="explore"
+      <Tabs.Screen
+        name="routine/index"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "운동 루틴",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="bolt.heart.fill" color={color} />
+          ),
         }}
-      /> */}
+      />
+      <Tabs.Screen
+        name="record/index"
+        options={{
+          title: "최근 운동",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="clock.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="category/index"
+        options={{
+          title: "카테고리",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="list.bullet" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

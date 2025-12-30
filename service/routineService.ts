@@ -1,4 +1,4 @@
-import type { IRoutine } from "@/interface/routine";
+import type { IRoutine, IRoutineInfo } from "@/interface/routine";
 import { API_URL } from "@/utils/config";
 
 export async function getRoutine(category?: string): Promise<IRoutine> {
@@ -77,5 +77,17 @@ export async function deleteRoutineByCategory(category: string) {
   } catch (e) {
     console.error(e);
     return "fail";
+  }
+}
+
+export async function getRoutineDetail(id?: string): Promise<IRoutineInfo> {
+  try {
+    const result = await fetch(`${API_URL}/routine/${id}`, {
+      method: "get",
+    });
+    const data = await result.json();
+    return data;
+  } catch (e) {
+    throw e;
   }
 }
