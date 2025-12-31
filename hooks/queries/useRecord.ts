@@ -4,7 +4,7 @@ import { getRecord } from "@/service/recordService";
 import { useQuery } from "@tanstack/react-query";
 
 export function useRecord() {
-  return useQuery<IRecord>({
+  return useQuery<IRecord[]>({
     queryKey: [QUERY_KEY.RECORD],
     queryFn: () => getRecord(),
   });
