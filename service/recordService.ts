@@ -1,20 +1,20 @@
-import type { IRoutine } from "@/interface/routine";
+import type { IRoutineInfo } from "@/interface/routine";
 import { API_URL } from "@/utils/config";
 
-export async function getRecord() {
+export async function getRecord(days?: number) {
   try {
-    const result = await fetch(`${API_URL}/record`, {
+    const query = typeof days === "number" ? `?days=${days}` : "";
+    const result = await fetch(`${API_URL}/record${query}`, {
       method: "get",
     });
     const data = await result.json();
     return data;
   } catch (e) {
-    console.error(e);
-    return "fail";
+    throw e;
   }
 }
 
-export async function addRecord(routine: IRoutine) {
+export async function addRecord(routine: IRoutineInfo) {
   try {
     const record = {
       title: routine.title,
