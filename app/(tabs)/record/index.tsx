@@ -1,6 +1,9 @@
+import DateButton from "@/components/record/DateButton";
 import RecordCard from "@/components/record/RecordCard";
+import { RANGE_OPTIONS } from "@/constants/dateOption";
 import { useRecord } from "@/hooks/queries/useRecord";
 import { Stack } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -10,13 +13,19 @@ import {
 } from "react-native";
 
 export default function Record() {
-  const { data: record, isLoading, isError } = useRecord();
+  const [selectedRange, setSelectedRange] = useState<number>(
+    RANGE_OPTIONS[0].value
+  );
+  const { data: record, isLoading, isError } = useRecord(selectedRange);
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "기록" }} />
       <Text style={styles.title}>최근 운동 기록</Text>
-
+      <DateButton
+        selectedRange={selectedRange}
+        handleChangeSelectedRange={setSelectedRange}
+      />
       {isLoading ? (
         <ActivityIndicator />
       ) : isError ? (

@@ -1,9 +1,10 @@
 import type { IRoutineInfo } from "@/interface/routine";
 import { API_URL } from "@/utils/config";
 
-export async function getRecord() {
+export async function getRecord(days?: number) {
   try {
-    const result = await fetch(`${API_URL}/record`, {
+    const query = typeof days === "number" ? `?days=${days}` : "";
+    const result = await fetch(`${API_URL}/record${query}`, {
       method: "get",
     });
     const data = await result.json();
