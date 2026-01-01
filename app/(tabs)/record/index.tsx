@@ -24,7 +24,7 @@ export default function Record() {
       ) : (
         <FlatList
           data={record ?? []}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item._id}
           renderItem={({ item }) => <RecordCard record={item} />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={

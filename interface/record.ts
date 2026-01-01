@@ -1,6 +1,6 @@
 export interface IRecord {
   category: string;
   date: string;
-  id: number;
+  _id: string;
   title: string;
 }

@@ -1,6 +1,7 @@
 import CompletionModal from "@/components/modal/CompletionModal";
 import CountdownModal from "@/components/modal/CountdownModal";
 import PlayCard from "@/components/play/PlayCard";
+import { useAddRecord } from "@/hooks/mutate/useAddRecord";
 import { useRoutineDetail } from "@/hooks/queries/useRoutine";
 import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -34,6 +35,8 @@ export default function Play() {
   const [countdown, setCountdown] = useState<number>(defaultTime);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
+  const [recordAdded, setRecordAdded] = useState(false);
+  const addRecordMutation = useAddRecord();
   const totalRoutines = routineDetail?.routine?.length ?? 0;
   const currentExercise =
     totalRoutines > 0 ? routineDetail?.routine?.[currentRoutineIndex] : null;
@@ -43,6 +46,7 @@ export default function Play() {
       setCounts(routineDetail.routine.map(() => 0));
       setCurrentRoutineIndex(0);
       setFinished(false);
+      setRecordAdded(false);
     }
   }, [routineDetail]);
 
@@ -107,6 +111,13 @@ export default function Play() {
       return updated;
     });
   }, [currentExercise, currentRoutineIndex, defaultTime, totalRoutines]);
+
+  useEffect(() => {
+    if (finished && routineDetail && !recordAdded) {
+      addRecordMutation.mutate(routineDetail);
+      setRecordAdded(true);
+    }
+  }, [finished, routineDetail, recordAdded, addRecordMutation]);
 
   if (isLoading) {
     return (
