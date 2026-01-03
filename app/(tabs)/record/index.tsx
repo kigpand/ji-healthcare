@@ -1,7 +1,9 @@
+import RecordCardModal from "@/components/modal/RecordCardModal";
 import DateButton from "@/components/record/DateButton";
 import RecordCard from "@/components/record/RecordCard";
 import { RANGE_OPTIONS } from "@/constants/dateOption";
 import { useRecord } from "@/hooks/queries/useRecord";
+import { IRecord } from "@/interface/record";
 import { Stack } from "expo-router";
 import { useState } from "react";
 import {
@@ -16,7 +18,9 @@ export default function Record() {
   const [selectedRange, setSelectedRange] = useState<number>(
     RANGE_OPTIONS[0].value
   );
+  const [selectedRecord, setSelectedRecord] = useState<IRecord | null>(null);
   const { data: record, isLoading, isError } = useRecord(selectedRange);
+  console.log(record);
 
   return (
     <View style={styles.container}>
@@ -34,7 +38,9 @@ export default function Record() {
         <FlatList
           data={record ?? []}
           keyExtractor={(item) => item._id}
-          renderItem={({ item }) => <RecordCard record={item} />}
+          renderItem={({ item }) => (
+            <RecordCard record={item} onPress={() => setSelectedRecord(item)} />
+          )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
             <Text style={styles.message}>아직 기록이 없습니다.</Text>
@@ -44,6 +50,10 @@ export default function Record() {
           }
         />
       )}
+      <RecordCardModal
+        selectedRecord={selectedRecord}
+        handleChangeRecord={setSelectedRecord}
+      />
     </View>
   );
 }

@@ -1,20 +1,24 @@
 import { IRecord } from "@/interface/record";
 import { format } from "date-fns";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 type Props = {
   record: IRecord;
+  onPress?: () => void;
 };
 
-export default function RecordCard({ record }: Props) {
+export default function RecordCard({ record, onPress }: Props) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
       <Text style={styles.cardTitle}>{record.title}</Text>
       <Text style={styles.cardCategory}>{record.category}</Text>
       <Text style={styles.cardDate}>
         {format(new Date(record.date), "yyyy.MM.dd HH:mm")}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -39,5 +43,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     color: "#9ca3af",
+  },
+  pressed: {
+    opacity: 0.85,
   },
 });
