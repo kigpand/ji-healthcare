@@ -20,7 +20,6 @@ export default function Record() {
   );
   const [selectedRecord, setSelectedRecord] = useState<IRecord | null>(null);
   const { data: record, isLoading, isError } = useRecord(selectedRange);
-  console.log(record);
 
   return (
     <View style={styles.container}>

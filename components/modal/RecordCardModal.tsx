@@ -37,11 +37,11 @@ export default function RecordCardModal({
             <Pressable
               style={[styles.modalButton, styles.modalConfirm]}
               onPress={() => {
-                if (selectedRecord?._id != null) {
+                if (selectedRecord?.id != null) {
                   router.push({
                     pathname: PATH.play,
                     params: {
-                      routineId: selectedRecord._id.toString(),
+                      routineId: selectedRecord.id.toString(),
                     },
                   });
                 }
