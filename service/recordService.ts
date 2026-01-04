@@ -20,6 +20,7 @@ export async function addRecord(routine: IRoutineInfo) {
       title: routine.title,
       category: routine.category,
       date: new Date(),
+      id: routine.id,
     };
     await fetch(`${API_URL}/record/addRecord`, {
       method: "post",
