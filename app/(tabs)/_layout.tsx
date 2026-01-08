@@ -53,6 +53,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="add-routine/index"
+        options={{
+          title: "루틴 추가",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="plus.circle.fill" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
