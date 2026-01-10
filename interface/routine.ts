@@ -15,3 +15,9 @@ export interface IRoutineInfo {
 export interface IRoutine {
   routines: IRoutineInfo[];
 }
+
+export interface IRoutineRequest {
+  title: string;
+  category: string;
+  routine: IRoutineData[];
+}
