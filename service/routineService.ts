@@ -1,4 +1,8 @@
-import type { IRoutine, IRoutineInfo } from "@/interface/routine";
+import type {
+  IRoutine,
+  IRoutineInfo,
+  IRoutineRequest,
+} from "@/interface/routine";
 import { API_URL } from "@/utils/config";
 
 export async function getRoutine(category?: string): Promise<IRoutine> {
@@ -16,7 +20,7 @@ export async function getRoutine(category?: string): Promise<IRoutine> {
   }
 }
 
-export async function addRoutine(routine: IRoutine) {
+export async function addRoutine(routine: IRoutineRequest) {
   try {
     await fetch(`${API_URL}/routine/addRoutine`, {
       method: "post",

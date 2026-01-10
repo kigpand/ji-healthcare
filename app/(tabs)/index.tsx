@@ -25,6 +25,10 @@ export default function HomeScreen() {
           title="카테고리"
           onPress={() => router.navigate(PATH.category)}
         />
+        <HomeButton
+          title="루틴 추가"
+          onPress={() => router.navigate(PATH.addRoutine)}
+        />
       </View>
     </View>
   );
