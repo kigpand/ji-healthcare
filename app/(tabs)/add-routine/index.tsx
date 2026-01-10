@@ -1,7 +1,7 @@
 import AddRoutineCard from "@/components/add-routine/AddRoutineCard";
 import RoutineCategorySelect from "@/components/add-routine/RoutineCategorySelect";
 import { useAddRoutine } from "@/hooks/mutate/useAddRoutine";
-import { ICategory } from "@/interface/category";
+import { useCategorySelection } from "@/hooks/useCategorySelection";
 import { Stack } from "expo-router";
 import { useState } from "react";
 import {
@@ -23,9 +23,14 @@ export type RoutineSetForm = {
 export default function AddRoutineScreen() {
   const addRoutineMutation = useAddRoutine();
   const [title, setTitle] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<ICategory | null>(
-    null
-  );
+  const {
+    categories,
+    isLoading: categoryLoading,
+    isError: categoryError,
+    selectedCategory,
+    handleChangeCategory,
+    resetCategorySelection,
+  } = useCategorySelection();
   const [sets, setSets] = useState<RoutineSetForm[]>([
     { title: "", set: "", kg: "" },
   ]);
@@ -84,7 +89,7 @@ export default function AddRoutineScreen() {
       });
       Alert.alert("등록 완료", "새로운 루틴이 추가되었습니다.");
       setTitle("");
-      setSelectedCategory(null);
+      resetCategorySelection();
       setSets([{ title: "", set: "", kg: "" }]);
     } catch (error) {
       console.error(error);
@@ -113,7 +118,10 @@ export default function AddRoutineScreen() {
           <Text style={styles.label}>카테고리</Text>
           <RoutineCategorySelect
             selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            categories={categories}
+            isLoading={categoryLoading}
+            isError={categoryError}
+            onSelectCategory={handleChangeCategory}
           />
         </View>
 

@@ -1,4 +1,3 @@
-import { useCategory } from "@/hooks/queries/useCategory";
 import { ICategory } from "@/interface/category";
 import React, { useState } from "react";
 import {
@@ -13,14 +12,19 @@ import {
 
 type Props = {
   selectedCategory: ICategory | null;
+  categories: ICategory[];
+  isLoading: boolean;
+  isError: boolean;
   onSelectCategory: (category: ICategory) => void;
 };
 
 export default function RoutineCategorySelect({
   selectedCategory,
+  categories,
+  isLoading,
+  isError,
   onSelectCategory,
 }: Props) {
-  const { data: categories, isLoading, isError } = useCategory();
   const [visible, setVisible] = useState(false);
 
   const handleSelect = (category: ICategory) => {
