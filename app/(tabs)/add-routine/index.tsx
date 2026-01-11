@@ -2,8 +2,8 @@ import AddRoutineCard from "@/components/add-routine/AddRoutineCard";
 import RoutineCategorySelect from "@/components/add-routine/RoutineCategorySelect";
 import { useAddRoutine } from "@/hooks/mutate/useAddRoutine";
 import { useCategorySelection } from "@/hooks/useCategorySelection";
+import { useRoutineForm, RoutineSetForm } from "@/hooks/useRoutineForm";
 import { Stack } from "expo-router";
-import { useState } from "react";
 import {
   Alert,
   Pressable,
@@ -14,15 +14,8 @@ import {
   View,
 } from "react-native";
 
-export type RoutineSetForm = {
-  title: string;
-  set: string;
-  kg: string;
-};
-
 export default function AddRoutineScreen() {
   const addRoutineMutation = useAddRoutine();
-  const [title, setTitle] = useState<string>("");
   const {
     categories,
     isLoading: categoryLoading,
@@ -31,28 +24,48 @@ export default function AddRoutineScreen() {
     handleChangeCategory,
     resetCategorySelection,
   } = useCategorySelection();
-  const [sets, setSets] = useState<RoutineSetForm[]>([
-    { title: "", set: "", kg: "" },
-  ]);
+  const { state: formState, dispatch } = useRoutineForm();
+  const { title, sets } = formState;
 
   const handleChangeSet = (
     index: number,
     key: keyof RoutineSetForm,
-    value: string
+    value: string,
+    options?: { numeric?: boolean },
   ) => {
-    setSets((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [key]: value };
-      return copy;
-    });
+    const sanitized = options?.numeric ? value.replace(/[^0-9]/g, "") : value;
+    dispatch({ type: "UPDATE_SET", index, key, value: sanitized });
   };
 
-  const handleAddSet = () => {
-    setSets((prev) => [...prev, { title: "", set: "", kg: "" }]);
+  const handleAddSet = () => dispatch({ type: "ADD_SET" });
+  const handleRemoveSet = (index: number) =>
+    dispatch({ type: "REMOVE_SET", index });
+
+  const resetForm = () => {
+    dispatch({ type: "RESET" });
+    resetCategorySelection();
   };
 
-  const handleRemoveSet = (index: number) => {
-    setSets((prev) => prev.filter((_, i) => i !== index));
+  const validateSets = () => {
+    for (let i = 0; i < sets.length; i++) {
+      const current = sets[i];
+      const parsedSet = Number(current.set);
+      const parsedKg = current.kg === "" ? 0 : Number(current.kg);
+
+      if (!current.title.trim()) {
+        return `세트 ${i + 1}의 운동 이름을 입력해주세요.`;
+      }
+
+      if (Number.isNaN(parsedSet) || parsedSet <= 0) {
+        return `세트 ${i + 1}의 횟수는 1 이상의 숫자만 입력해주세요.`;
+      }
+
+      if (current.kg !== "" && Number.isNaN(parsedKg)) {
+        return `세트 ${i + 1}의 무게는 숫자만 입력해주세요.`;
+      }
+    }
+
+    return null;
   };
 
   const handleSubmit = async () => {
@@ -61,19 +74,9 @@ export default function AddRoutineScreen() {
       return;
     }
 
-    if (
-      sets.some(
-        (s) =>
-          !s.title.trim() ||
-          Number.isNaN(Number(s.set)) ||
-          Number(s.set) <= 0 ||
-          Number.isNaN(Number(s.kg))
-      )
-    ) {
-      Alert.alert(
-        "세트 정보를 확인해주세요",
-        "세트 이름, 횟수, 무게를 모두 정확히 입력해주세요."
-      );
+    const setValidationMessage = validateSets();
+    if (setValidationMessage) {
+      Alert.alert("세트 정보를 확인해주세요", setValidationMessage);
       return;
     }
 
@@ -81,19 +84,17 @@ export default function AddRoutineScreen() {
       await addRoutineMutation.mutateAsync({
         title: title.trim(),
         category: selectedCategory.category,
-        routine: sets.map((s) => ({
-          title: s.title.trim(),
-          set: Number(s.set),
-          kg: Number(s.kg) || 0,
+        routine: sets.map((set) => ({
+          title: set.title.trim(),
+          set: Number(set.set),
+          kg: Number(set.kg) || 0,
         })),
       });
       Alert.alert("등록 완료", "새로운 루틴이 추가되었습니다.");
-      setTitle("");
-      resetCategorySelection();
-      setSets([{ title: "", set: "", kg: "" }]);
+      resetForm();
     } catch (error) {
       console.error(error);
-      Alert.alert(`등록 실패", "루틴을 추가하는데 실패했습니다`);
+      Alert.alert("등록 실패", "루틴을 추가하는데 실패했습니다.");
     }
   };
 
@@ -109,7 +110,7 @@ export default function AddRoutineScreen() {
           <TextInput
             style={styles.input}
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(text) => dispatch({ type: "SET_TITLE", payload: text })}
             placeholder="예: 상체 루틴"
           />
         </View>
@@ -128,7 +129,7 @@ export default function AddRoutineScreen() {
         <Text style={styles.sectionTitle}>세트 구성</Text>
         {sets.map((set, index) => (
           <AddRoutineCard
-            key={index}
+            key={`${index}-${set.title}`}
             index={index}
             sets={sets}
             set={set}
@@ -187,7 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
-
   addSetButton: {
     alignSelf: "flex-start",
     borderRadius: 999,

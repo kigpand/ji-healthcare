@@ -1,4 +1,4 @@
-import { RoutineSetForm } from "@/app/(tabs)/add-routine";
+import { RoutineSetForm } from "@/hooks/useRoutineForm";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 type Props = {
@@ -8,7 +8,8 @@ type Props = {
   handleChangeSet: (
     index: number,
     key: keyof RoutineSetForm,
-    value: string
+    value: string,
+    options?: { numeric?: boolean },
   ) => void;
   handleRemoveSet: (idx: number) => void;
 };
@@ -40,14 +41,18 @@ export default function AddRoutineCard({
         <TextInput
           style={[styles.input, styles.rowInput]}
           value={set.set}
-          onChangeText={(text) => handleChangeSet(index, "set", text)}
+          onChangeText={(text) =>
+            handleChangeSet(index, "set", text, { numeric: true })
+          }
           placeholder="세트 수"
           keyboardType="numeric"
         />
         <TextInput
           style={[styles.input, styles.rowInput]}
           value={set.kg}
-          onChangeText={(text) => handleChangeSet(index, "kg", text)}
+          onChangeText={(text) =>
+            handleChangeSet(index, "kg", text, { numeric: true })
+          }
           placeholder="무게 (kg)"
           keyboardType="numeric"
         />
