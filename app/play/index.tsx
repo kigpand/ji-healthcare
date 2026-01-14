@@ -3,7 +3,13 @@ import CountdownModal from "@/components/modal/CountdownModal";
 import PlayCard from "@/components/play/PlayCard";
 import { useRoutineRunner } from "@/hooks/useRoutineRunner";
 import { Stack } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function Play() {
   const {

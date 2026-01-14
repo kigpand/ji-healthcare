@@ -1,12 +1,6 @@
+import ModalContainer from "@/components/modal/ModalContainer";
 import { useEffect, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 type Props = {
   modalVisible: boolean;
@@ -30,59 +24,39 @@ export default function TimerModal({
   }, [modalVisible, initialValue]);
 
   return (
-    <Modal
+    <ModalContainer
       visible={modalVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>휴식 시간을 설정하세요</Text>
-          <Text style={styles.modalDescription}>
-            한 세트 사이에 쉴 시간을 초 단위로 입력해주세요.
-          </Text>
-          <TextInput
-            value={time}
-            onChangeText={setTime}
-            keyboardType="number-pad"
-            style={styles.input}
-            placeholder="초 단위 입력"
-          />
+      onClose={onClose}
+      title="휴식 시간을 설정하세요"
+      footer={
+        <View style={styles.bottomButtons}>
+          <Pressable style={[styles.button, styles.cancel]} onPress={onClose}>
+            <Text style={[styles.buttonText, styles.cancelText]}>취소</Text>
+          </Pressable>
           <Pressable
-            style={styles.confirmButton}
+            style={[styles.button, styles.confirm]}
             onPress={() => handleConfirmRestTime(time)}
           >
             <Text style={styles.buttonText}>확인</Text>
           </Pressable>
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.buttonText}>취소</Text>
-          </Pressable>
         </View>
-      </View>
-    </Modal>
+      }
+    >
+      <Text style={styles.modalDescription}>
+        한 세트 사이에 쉴 시간을 초 단위로 입력해주세요.
+      </Text>
+      <TextInput
+        value={time}
+        onChangeText={setTime}
+        keyboardType="number-pad"
+        style={styles.input}
+        placeholder="초 단위 입력"
+      />
+    </ModalContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  modalContent: {
-    width: "100%",
-    borderRadius: 16,
-    backgroundColor: "#fff",
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
   modalDescription: {
     fontSize: 14,
     color: "#555",
@@ -97,22 +71,29 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
   },
-  confirmButton: {
-    backgroundColor: "#2563eb",
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignItems: "center",
+  bottomButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 12,
   },
-  closeButton: {
-    marginTop: 4,
-    backgroundColor: "#ff6d6d",
-    paddingVertical: 8,
+  button: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 10,
-    alignItems: "center",
+  },
+  confirm: {
+    backgroundColor: "#2563eb",
+  },
+  cancel: {
+    backgroundColor: "#e5e7eb",
   },
   buttonText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+    color: "#fff",
+  },
+  cancelText: {
+    color: "#111827",
   },
 });
