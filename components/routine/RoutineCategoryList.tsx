@@ -1,6 +1,4 @@
-import { useCategory } from "@/hooks/queries/useCategory";
 import { ICategory } from "@/interface/category";
-import { useEffect } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,29 +9,23 @@ import {
 } from "react-native";
 
 type Props = {
-  selectedCategoryId: ICategory | null;
+  categories: ICategory[];
+  isLoading: boolean;
+  isError: boolean;
+  selectedCategory: ICategory | null;
   handleChangeCategory: (category: ICategory) => void;
 };
 
 export default function RoutineCategoryList({
-  selectedCategoryId,
+  categories,
+  isLoading,
+  isError,
+  selectedCategory,
   handleChangeCategory,
 }: Props) {
-  const {
-    data: categories,
-    isLoading: categoryLoading,
-    isError: categoryError,
-  } = useCategory();
+  if (isLoading) return <ActivityIndicator />;
 
-  useEffect(() => {
-    if (!selectedCategoryId && categories?.length) {
-      handleChangeCategory(categories[0]);
-    }
-  }, [categories, selectedCategoryId, handleChangeCategory]);
-
-  if (categoryLoading) return <ActivityIndicator />;
-
-  if (categoryError) return <Text>카테고리를 불러오지 못했습니다.</Text>;
+  if (isError) return <Text>카테고리를 불러오지 못했습니다.</Text>;
 
   return (
     <View style={styles.categoryWrapper}>
@@ -43,7 +35,7 @@ export default function RoutineCategoryList({
         contentContainerStyle={styles.categoryList}
       >
         {categories?.map((category) => {
-          const isSelected = category._id === selectedCategoryId?._id;
+          const isSelected = category._id === selectedCategory?._id;
           return (
             <Pressable
               key={category._id}

@@ -1,6 +1,7 @@
+import ModalContainer from "@/components/modal/ModalContainer";
 import { PATH } from "@/constants/path";
 import { useRouter } from "expo-router";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 type Props = {
   visible: boolean;
@@ -14,42 +15,24 @@ export default function CompletionModal({ visible }: Props) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.content}>
-          <Text style={styles.title}>운동 완료!</Text>
-          <Text style={styles.description}>
-            오늘의 운동을 잘 마쳤어요. 홈으로 돌아가 다음 운동을 준비해볼까요?
-          </Text>
-          <Pressable style={styles.button} onPress={handleGoHome}>
-            <Text style={styles.buttonText}>홈으로 이동</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
+    <ModalContainer
+      visible={visible}
+      title="운동 완료!"
+      onClose={handleGoHome}
+      footer={
+        <Pressable style={styles.button} onPress={handleGoHome}>
+          <Text style={styles.buttonText}>홈으로 이동</Text>
+        </Pressable>
+      }
+    >
+      <Text style={styles.description}>
+        오늘의 운동을 잘 마쳤어요. 홈으로 돌아가 다음 운동을 준비해볼까요?
+      </Text>
+    </ModalContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  content: {
-    width: "100%",
-    borderRadius: 16,
-    backgroundColor: "#fff",
-    padding: 24,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
   description: {
     fontSize: 15,
     color: "#4b5563",
@@ -69,4 +52,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

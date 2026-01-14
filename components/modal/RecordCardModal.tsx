@@ -1,7 +1,8 @@
+import ModalContainer from "@/components/modal/ModalContainer";
 import { PATH } from "@/constants/path";
 import { IRecord } from "@/interface/record";
 import { useRouter } from "expo-router";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   selectedRecord: IRecord | null;
@@ -15,69 +16,45 @@ export default function RecordCardModal({
   const router = useRouter();
 
   return (
-    <Modal
+    <ModalContainer
       visible={!!selectedRecord}
-      transparent
-      animationType="fade"
-      onRequestClose={() => handleChangeRecord(null)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>이 운동을 다시 시작할까요?</Text>
-          <Text style={styles.modalSubtitle}>
-            {selectedRecord?.title ?? ""}
-          </Text>
-          <View style={styles.modalButtons}>
-            <Pressable
-              style={[styles.modalButton, styles.modalCancel]}
-              onPress={() => handleChangeRecord(null)}
-            >
-              <Text style={styles.modalButtonText}>아니오</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.modalButton, styles.modalConfirm]}
-              onPress={() => {
-                if (selectedRecord?.id != null) {
-                  router.push({
-                    pathname: PATH.play,
-                    params: {
-                      routineId: selectedRecord.id.toString(),
-                    },
-                  });
-                }
-                handleChangeRecord(null);
-              }}
-            >
-              <Text style={[styles.modalButtonText, styles.modalConfirmText]}>
-                예
-              </Text>
-            </Pressable>
-          </View>
+      onClose={() => handleChangeRecord(null)}
+      title="이 운동을 다시 시작할까요?"
+      footer={
+        <View style={styles.modalButtons}>
+          <Pressable
+            style={[styles.modalButton, styles.modalCancel]}
+            onPress={() => handleChangeRecord(null)}
+          >
+            <Text style={styles.modalButtonText}>아니오</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.modalButton, styles.modalConfirm]}
+            onPress={() => {
+              if (selectedRecord?.routineId) {
+                router.push({
+                  pathname: PATH.play,
+                  params: {
+                    routineId: selectedRecord._id.toString(),
+                  },
+                });
+              }
+              handleChangeRecord(null);
+            }}
+          >
+            <Text style={[styles.modalButtonText, styles.modalConfirmText]}>
+              예
+            </Text>
+          </Pressable>
         </View>
-      </View>
-    </Modal>
+      }
+    >
+      <Text style={styles.modalSubtitle}>{selectedRecord?.title ?? ""}</Text>
+    </ModalContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  modalContent: {
-    width: "100%",
-    borderRadius: 16,
-    backgroundColor: "#fff",
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
   modalSubtitle: {
     fontSize: 16,
     color: "#4b5563",

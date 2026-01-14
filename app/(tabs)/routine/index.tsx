@@ -1,22 +1,28 @@
 import RoutineCategoryList from "@/components/routine/RoutineCategoryList";
 import RoutineListContainer from "@/components/routine/RoutineListContainer";
-import { ICategory } from "@/interface/category";
+import { useCategorySelection } from "@/hooks/useCategorySelection";
 import { Stack } from "expo-router";
-import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function Routine() {
-  const [selectedCategory, setSelectedCategory] = useState<ICategory | null>(
-    null
-  );
+  const {
+    categories,
+    isLoading,
+    isError,
+    selectedCategory,
+    handleChangeCategory,
+  } = useCategorySelection();
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "루틴" }} />
       <Text style={styles.sectionTitle}>운동 카테고리</Text>
       <RoutineCategoryList
-        selectedCategoryId={selectedCategory}
-        handleChangeCategory={setSelectedCategory}
+        categories={categories}
+        isLoading={isLoading}
+        isError={isError}
+        selectedCategory={selectedCategory}
+        handleChangeCategory={handleChangeCategory}
       />
 
       <View style={styles.routineHeader}>
