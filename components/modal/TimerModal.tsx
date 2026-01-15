@@ -45,17 +45,17 @@ export default function TimerModal({
       <Text style={styles.modalDescription}>
         한 세트 사이에 쉴 시간을 초 단위로 입력해주세요.
       </Text>
-          <TextInput
-            value={time}
-            onChangeText={(text) => {
-              if (/^\d*$/.test(text)) {
-                setTime(text);
-              }
-            }}
-            keyboardType="number-pad"
-            style={styles.input}
-            placeholder="초 단위 입력"
-          />
+      <TextInput
+        value={time}
+        onChangeText={(text) => {
+          const digits = text.replace(/[^0-9]/g, "");
+          setTime(digits);
+        }}
+        keyboardType="number-pad"
+        inputMode="numeric"
+        style={styles.input}
+        placeholder="초 단위 입력"
+      />
     </ModalContainer>
   );
 }

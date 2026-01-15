@@ -45,7 +45,8 @@ export default function AddRoutineCard({
             handleChangeSet(index, "set", text, { numeric: true })
           }
           placeholder="세트 수"
-          keyboardType="numeric"
+          keyboardType="number-pad"
+          inputMode="numeric"
         />
         <TextInput
           style={[styles.input, styles.rowInput]}
@@ -54,7 +55,8 @@ export default function AddRoutineCard({
             handleChangeSet(index, "kg", text, { numeric: true })
           }
           placeholder="무게 (kg)"
-          keyboardType="numeric"
+          keyboardType="number-pad"
+          inputMode="numeric"
         />
       </View>
     </View>
