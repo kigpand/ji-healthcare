@@ -47,8 +47,12 @@ export default function TimerModal({
       </Text>
       <TextInput
         value={time}
-        onChangeText={setTime}
+        onChangeText={(text) => {
+          const digits = text.replace(/[^0-9]/g, "");
+          setTime(digits);
+        }}
         keyboardType="number-pad"
+        inputMode="numeric"
         style={styles.input}
         placeholder="초 단위 입력"
       />

@@ -129,7 +129,7 @@ export default function AddRoutineScreen() {
         <Text style={styles.sectionTitle}>세트 구성</Text>
         {sets.map((set, index) => (
           <AddRoutineCard
-            key={`${index}-${set.title}`}
+            key={`set-${index}`}
             index={index}
             sets={sets}
             set={set}
