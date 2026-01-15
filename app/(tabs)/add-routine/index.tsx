@@ -33,8 +33,11 @@ export default function AddRoutineScreen() {
     value: string,
     options?: { numeric?: boolean },
   ) => {
-    const sanitized = options?.numeric ? value.replace(/[^0-9]/g, "") : value;
-    dispatch({ type: "UPDATE_SET", index, key, value: sanitized });
+    if (options?.numeric && /[^0-9]/.test(value)) {
+      return;
+    }
+
+    dispatch({ type: "UPDATE_SET", index, key, value });
   };
 
   const handleAddSet = () => dispatch({ type: "ADD_SET" });
