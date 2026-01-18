@@ -1,6 +1,7 @@
 import RecordCardModal from "@/components/modal/RecordCardModal";
 import DateButton from "@/components/record/DateButton";
 import RecordCard from "@/components/record/RecordCard";
+import RecordChart from "@/components/record/RecordChart";
 import { RANGE_OPTIONS } from "@/constants/dateOption";
 import { useRecord } from "@/hooks/queries/useRecord";
 import { IRecord } from "@/interface/record";
@@ -44,6 +45,7 @@ export default function Record() {
           ListEmptyComponent={
             <Text style={styles.message}>아직 기록이 없습니다.</Text>
           }
+          ListHeaderComponent={<RecordChart records={record ?? []} />}
           contentContainerStyle={
             !record?.length ? styles.emptyContainer : undefined
           }
