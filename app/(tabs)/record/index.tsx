@@ -6,7 +6,7 @@ import { RANGE_OPTIONS } from "@/constants/dateOption";
 import { useRecord } from "@/hooks/queries/useRecord";
 import { IRecord } from "@/interface/record";
 import { Stack } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -21,6 +21,9 @@ export default function Record() {
   );
   const [selectedRecord, setSelectedRecord] = useState<IRecord | null>(null);
   const { data: record, isLoading, isError } = useRecord(selectedRange);
+  const recordList = useMemo(() => {
+    return record ?? [];
+  }, [record]);
 
   return (
     <View style={styles.container}>
@@ -36,7 +39,7 @@ export default function Record() {
         <Text style={styles.message}>기록을 불러오지 못했습니다.</Text>
       ) : (
         <FlatList
-          data={record ?? []}
+          data={recordList}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
             <RecordCard record={item} onPress={() => setSelectedRecord(item)} />
@@ -45,7 +48,7 @@ export default function Record() {
           ListEmptyComponent={
             <Text style={styles.message}>아직 기록이 없습니다.</Text>
           }
-          ListHeaderComponent={<RecordChart records={record ?? []} />}
+          ListHeaderComponent={<RecordChart records={recordList} />}
           contentContainerStyle={
             !record?.length ? styles.emptyContainer : undefined
           }
