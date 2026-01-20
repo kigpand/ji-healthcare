@@ -1,5 +1,6 @@
 import { ICategory } from "@/interface/category";
 import React, { useState } from "react";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {
   ActivityIndicator,
   Modal,
@@ -46,6 +47,7 @@ export default function RoutineCategorySelect({
             ? "카테고리를 불러오지 못했습니다."
             : selectedCategory?.category ?? "카테고리를 선택해주세요"}
         </Text>
+        <MaterialIcons name="expand-more" size={20} color="#6b7280" />
       </Pressable>
 
       <Modal
@@ -107,6 +109,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   selectText: {
     fontSize: 16,

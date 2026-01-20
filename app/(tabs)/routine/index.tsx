@@ -1,4 +1,4 @@
-import RoutineCategoryList from "@/components/routine/RoutineCategoryList";
+import RoutineCategorySelect from "@/components/add-routine/RoutineCategorySelect";
 import RoutineListContainer from "@/components/routine/RoutineListContainer";
 import { useCategorySelection } from "@/hooks/useCategorySelection";
 import { Stack } from "expo-router";
@@ -17,13 +17,15 @@ export default function Routine() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: "루틴" }} />
       <Text style={styles.sectionTitle}>운동 카테고리</Text>
-      <RoutineCategoryList
-        categories={categories}
-        isLoading={isLoading}
-        isError={isError}
-        selectedCategory={selectedCategory}
-        handleChangeCategory={handleChangeCategory}
-      />
+      <View style={styles.selectWrapper}>
+        <RoutineCategorySelect
+          categories={categories}
+          isLoading={isLoading}
+          isError={isError}
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleChangeCategory}
+        />
+      </View>
 
       <View style={styles.routineHeader}>
         <Text style={styles.sectionTitle}>
@@ -48,6 +50,9 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "600",
     marginBottom: 12,
+  },
+  selectWrapper: {
+    marginBottom: 8,
   },
   routineHeader: {
     marginTop: 24,
