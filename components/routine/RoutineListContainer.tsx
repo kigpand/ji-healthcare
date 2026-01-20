@@ -7,7 +7,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -41,28 +40,19 @@ export default function RoutineListContainer({ selectedCategory }: Props) {
     setModalVisible(true);
   }
 
-  function handleConfirmRestTime(time: string) {
-    const parsed = parseInt(time, 10);
-    if (Number.isNaN(parsed) || parsed <= 0) {
-      Alert.alert(
-        "휴식 시간을 확인해주세요",
-        "1초 이상의 숫자를 입력해주세요."
-      );
-      return;
-    }
-
+  function handleConfirmRestTime(time: number) {
     if (!selectedRoutine) {
       setModalVisible(false);
       return;
     }
 
-    setTimer(parsed);
+    setTimer(time);
     setModalVisible(false);
     router.push({
       pathname: PATH.play,
       params: {
         routineId: selectedRoutine.id.toString(),
-        timer: parsed.toString(),
+        timer: time.toString(),
       },
     });
     setSelectedRoutine(null);

@@ -1,11 +1,18 @@
 import ModalContainer from "@/components/modal/ModalContainer";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 type Props = {
   modalVisible: boolean;
   initialValue: number;
-  handleConfirmRestTime: (timer: string) => void;
+  handleConfirmRestTime: (timer: number) => void;
   onClose?: () => void;
 };
 
@@ -23,6 +30,19 @@ export default function TimerModal({
     }
   }, [modalVisible, initialValue]);
 
+  function handlePressButton() {
+    const timer = parseInt(time, 10);
+    if (Number.isNaN(timer) || timer <= 0) {
+      Alert.alert(
+        "휴식 시간을 확인해주세요",
+        "1초 이상의 숫자를 입력해주세요."
+      );
+      return;
+    }
+
+    handleConfirmRestTime(timer);
+  }
+
   return (
     <ModalContainer
       visible={modalVisible}
@@ -35,7 +55,7 @@ export default function TimerModal({
           </Pressable>
           <Pressable
             style={[styles.button, styles.confirm]}
-            onPress={() => handleConfirmRestTime(time)}
+            onPress={handlePressButton}
           >
             <Text style={styles.buttonText}>확인</Text>
           </Pressable>

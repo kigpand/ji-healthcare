@@ -1,10 +1,11 @@
 import { ICategory } from "@/interface/category";
 import React, { useState } from "react";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -46,6 +47,7 @@ export default function RoutineCategorySelect({
             ? "카테고리를 불러오지 못했습니다."
             : selectedCategory?.category ?? "카테고리를 선택해주세요"}
         </Text>
+        <MaterialIcons name="expand-more" size={20} color="#6b7280" />
       </Pressable>
 
       <Modal
@@ -62,17 +64,19 @@ export default function RoutineCategorySelect({
             ) : isError ? (
               <Text>카테고리를 불러오지 못했습니다.</Text>
             ) : (
-              <ScrollView style={{ maxHeight: 320 }}>
-                {categories?.map((category) => {
-                  const selected = category._id === selectedCategory?._id;
+              <FlatList
+                style={styles.categoryList}
+                data={categories}
+                keyExtractor={(item) => item._id}
+                renderItem={({ item }) => {
+                  const selected = item._id === selectedCategory?._id;
                   return (
                     <Pressable
-                      key={category._id}
                       style={[
                         styles.categoryItem,
                         selected && styles.categoryItemSelected,
                       ]}
-                      onPress={() => handleSelect(category)}
+                      onPress={() => handleSelect(item)}
                     >
                       <Text
                         style={[
@@ -80,12 +84,15 @@ export default function RoutineCategorySelect({
                           selected && styles.categoryItemTextSelected,
                         ]}
                       >
-                        {category.category}
+                        {item.category}
                       </Text>
                     </Pressable>
                   );
-                })}
-              </ScrollView>
+                }}
+                ListEmptyComponent={
+                  <Text style={styles.emptyText}>카테고리가 없습니다.</Text>
+                }
+              />
             )}
             <Pressable
               style={styles.closeButton}
@@ -107,6 +114,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   selectText: {
     fontSize: 16,
@@ -129,6 +139,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
+  },
+  categoryList: {
+    maxHeight: 320,
   },
   categoryItem: {
     paddingVertical: 12,
@@ -154,5 +167,10 @@ const styles = StyleSheet.create({
   closeText: {
     color: "#2563eb",
     fontWeight: "600",
+  },
+  emptyText: {
+    textAlign: "center",
+    paddingVertical: 20,
+    color: "#6b7280",
   },
 });
