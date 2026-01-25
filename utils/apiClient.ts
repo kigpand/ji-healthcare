@@ -37,8 +37,16 @@ export async function apiClient<T = unknown>(
     }
     requestInit.body = JSON.stringify(json);
   }
-
-  const response = await fetch(`${API_URL}${path}`, requestInit);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, requestInit);
+  } catch (error) {
+    throw new ApiError(
+      "네트워크에 연결하지 못했습니다. 인터넷 상태를 확인해주세요.",
+      0,
+      error instanceof Error ? error.message : null,
+    );
+  }
 
   if (!response.ok) {
     let errorBody: unknown = null;
