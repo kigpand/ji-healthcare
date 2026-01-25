@@ -80,22 +80,17 @@ export default function AddRoutineScreen() {
       return;
     }
 
-    try {
-      await addRoutineMutation.mutateAsync({
-        title: title.trim(),
-        category: selectedCategory.category,
-        routine: sets.map((set) => ({
-          title: set.title.trim(),
-          set: Number(set.set),
-          kg: Number(set.kg) || 0,
-        })),
-      });
-      Alert.alert("등록 완료", "새로운 루틴이 추가되었습니다.");
-      resetForm();
-    } catch (error) {
-      console.error(error);
-      Alert.alert("등록 실패", "루틴을 추가하는데 실패했습니다.");
-    }
+    await addRoutineMutation.mutateAsync({
+      title: title.trim(),
+      category: selectedCategory.category,
+      routine: sets.map((set) => ({
+        title: set.title.trim(),
+        set: Number(set.set),
+        kg: Number(set.kg) || 0,
+      })),
+    });
+    Alert.alert("등록 완료", "새로운 루틴이 추가되었습니다.");
+    resetForm();
   };
 
   return (
