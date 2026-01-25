@@ -1,7 +1,6 @@
 import { useAddCategory } from "@/hooks/mutate/useAddCategory";
 import { useCallback, useState } from "react";
 import {
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -19,17 +18,8 @@ export default function AddCategory() {
       return;
     }
 
-    try {
-      const success = await addCategoryMutation.mutateAsync(trimmed);
-      if (!success) {
-        Alert.alert("카테고리 추가 실패", "다시 시도해주세요.");
-        return;
-      }
-      setNewCategory("");
-    } catch (error) {
-      console.error(error);
-      Alert.alert("카테고리 추가 실패", "잠시 후 다시 시도해주세요.");
-    }
+    await addCategoryMutation.mutateAsync(trimmed);
+    setNewCategory("");
   }, [addCategoryMutation, newCategory]);
 
   return (

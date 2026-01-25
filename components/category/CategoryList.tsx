@@ -1,7 +1,7 @@
 import { useDeleteCategory } from "@/hooks/mutate/useDeleteCategory";
 import type { ICategory } from "@/interface/category";
 import { useCallback } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   item: ICategory;
@@ -17,15 +17,7 @@ export default function CategoryList({ item }: Props) {
         return;
       }
 
-      try {
-        const success = await deleteCategoryMutation.mutateAsync(id);
-        if (!success) {
-          Alert.alert("삭제 실패", "카테고리를 삭제하지 못했습니다.");
-        }
-      } catch (error) {
-        console.error(error);
-        Alert.alert("삭제 실패", "잠시 후 다시 시도해주세요.");
-      }
+      await deleteCategoryMutation.mutateAsync(id);
     },
     [deleteCategoryMutation]
   );

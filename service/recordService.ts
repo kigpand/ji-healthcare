@@ -1,37 +1,26 @@
 import type { IRoutineInfo } from "@/interface/routine";
-import { API_URL } from "@/utils/config";
+import { apiClient } from "@/utils/apiClient";
+import { IRecord } from "@/interface/record";
 
 export async function getRecord(days?: number) {
-  try {
-    const query = typeof days === "number" ? `?days=${days}` : "";
-    const result = await fetch(`${API_URL}/record${query}`, {
-      method: "get",
-    });
-    const data = await result.json();
-    return data;
-  } catch (e) {
-    throw e;
-  }
+  const query = typeof days === "number" ? `?days=${days}` : "";
+  return apiClient<IRecord[]>(`/record${query}`, {
+    method: "GET",
+  });
 }
 
 export async function addRecord(routine: IRoutineInfo) {
-  try {
-    const record = {
-      title: routine.title,
-      category: routine.category,
-      date: new Date(),
-      id: routine.id,
-    };
-    await fetch(`${API_URL}/record/addRecord`, {
-      method: "post",
-      body: JSON.stringify(record),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return true;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
+  const record = {
+    title: routine.title,
+    category: routine.category,
+    date: new Date(),
+    id: routine.id,
+  };
+
+  await apiClient("/record/addRecord", {
+    method: "POST",
+    json: record,
+    parse: "none",
+  });
+  return true;
 }
