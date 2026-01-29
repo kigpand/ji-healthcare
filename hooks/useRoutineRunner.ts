@@ -66,7 +66,7 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         counts: state.counts.map((count, idx) =>
           idx === action.payload.index
             ? Math.min(count + 1, action.payload.max)
-            : count,
+            : count
         ),
       };
     case "MOVE_NEXT_ROUTINE":
@@ -185,20 +185,34 @@ export function useRoutineRunner() {
       type: "INCREMENT_SET",
       payload: { index: currentRoutineIndex, max: currentExercise.set },
     });
+  }, [currentExercise, currentRoutineIndex, defaultTime]);
 
-    const updatedCount =
-      counts[currentRoutineIndex] + 1 >= currentExercise.set
-        ? currentExercise.set
-        : counts[currentRoutineIndex] + 1;
-
-    if (updatedCount >= currentExercise.set) {
-      if (currentRoutineIndex + 1 < totalRoutines) {
-        dispatch({ type: "MOVE_NEXT_ROUTINE" });
-      } else {
-        dispatch({ type: "FINISH" });
-      }
+  useEffect(() => {
+    if (!currentExercise || finished) {
+      return;
     }
-  }, [currentExercise, currentRoutineIndex, defaultTime, totalRoutines]);
+
+    const currentCount = counts[currentRoutineIndex];
+    if (typeof currentCount !== "number") {
+      return;
+    }
+
+    if (currentCount < currentExercise.set) {
+      return;
+    }
+
+    if (currentRoutineIndex + 1 < totalRoutines) {
+      dispatch({ type: "MOVE_NEXT_ROUTINE" });
+    } else {
+      dispatch({ type: "FINISH" });
+    }
+  }, [
+    counts,
+    currentExercise,
+    currentRoutineIndex,
+    totalRoutines,
+    finished,
+  ]);
 
   useEffect(() => {
     if (finished && routineDetail && !recordAdded) {
