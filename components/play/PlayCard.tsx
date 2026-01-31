@@ -9,6 +9,7 @@ type Props = {
   currentRoutineIndex: number;
   totalRoutines: number;
   handleCompleteSet: () => void;
+  onPressVideo?: (link: string) => void;
 };
 
 export default function PlayCard({
@@ -19,6 +20,7 @@ export default function PlayCard({
   currentRoutineIndex,
   totalRoutines,
   handleCompleteSet,
+  onPressVideo,
 }: Props) {
   const count = counts[index] ?? 0;
   const isActive = index === currentRoutineIndex;
@@ -40,6 +42,14 @@ export default function PlayCard({
       <Text style={styles.exerciseDetail}>
         {routine.set}세트 · {routine.kg}kg
       </Text>
+      {routine.link ? (
+        <Pressable
+          style={styles.videoButton}
+          onPress={() => onPressVideo?.(routine.link!)}
+        >
+          <Text style={styles.videoButtonText}>영상 보기</Text>
+        </Pressable>
+      ) : null}
       <Text style={styles.countText}>
         진행: {count}/{routine.set}
       </Text>
@@ -78,6 +88,20 @@ const styles = StyleSheet.create({
   exerciseDetail: {
     fontSize: 14,
     color: "#4b5563",
+  },
+  videoButton: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#2563eb",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  videoButtonText: {
+    color: "#2563eb",
+    fontWeight: "600",
+    fontSize: 13,
   },
   countText: {
     marginTop: 8,

@@ -1,5 +1,6 @@
 import CompletionModal from "@/components/modal/CompletionModal";
 import CountdownModal from "@/components/modal/CountdownModal";
+import VideoModal from "@/components/modal/VideoModal";
 import PlayCard from "@/components/play/PlayCard";
 import { useRoutineRunner } from "@/hooks/useRoutineRunner";
 import { Stack } from "expo-router";
@@ -10,8 +11,20 @@ import {
   Text,
   View,
 } from "react-native";
+import { useState, useCallback } from "react";
 
 export default function Play() {
+  const [videoLink, setVideoLink] = useState<string | null>(null);
+  const [videoVisible, setVideoVisible] = useState(false);
+
+  const openVideo = useCallback((link: string) => {
+    setVideoLink(link);
+    setVideoVisible(true);
+  }, []);
+
+  const closeVideo = useCallback(() => {
+    setVideoVisible(false);
+  }, []);
   const {
     routineDetail,
     isLoading,
@@ -64,6 +77,7 @@ export default function Play() {
               currentRoutineIndex={currentRoutineIndex}
               totalRoutines={totalRoutines}
               handleCompleteSet={handleCompleteSet}
+              onPressVideo={openVideo}
             />
           );
         })}
@@ -75,6 +89,7 @@ export default function Play() {
         onStartNext={handleStartNextSet}
       />
       <CompletionModal visible={finished} />
+      <VideoModal visible={videoVisible} link={videoLink ?? undefined} onClose={closeVideo} />
     </View>
   );
 }
