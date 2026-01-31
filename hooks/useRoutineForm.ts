@@ -4,6 +4,7 @@ export type RoutineSetForm = {
   title: string;
   set: string;
   kg: string;
+  link: string;
 };
 
 type RoutineFormState = {
@@ -26,7 +27,7 @@ type RoutineFormAction =
 
 const createInitialState = (): RoutineFormState => ({
   title: "",
-  sets: [{ title: "", set: "", kg: "" }],
+  sets: [{ title: "", set: "", kg: "", link: "" }],
 });
 
 function reducer(state: RoutineFormState, action: RoutineFormAction) {
@@ -47,7 +48,7 @@ function reducer(state: RoutineFormState, action: RoutineFormAction) {
     case "ADD_SET":
       return {
         ...state,
-        sets: [...state.sets, { title: "", set: "", kg: "" }],
+        sets: [...state.sets, { title: "", set: "", kg: "", link: "" }],
       };
     case "REMOVE_SET":
       return {
@@ -69,4 +70,3 @@ export function useRoutineForm() {
     dispatch,
   };
 }
-
