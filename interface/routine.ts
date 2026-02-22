@@ -2,6 +2,7 @@ export interface IRoutineData {
   kg: number;
   set: number;
   title: string;
+  link?: string;
 }
 
 export interface IRoutineInfo {

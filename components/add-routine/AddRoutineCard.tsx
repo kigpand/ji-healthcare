@@ -37,6 +37,14 @@ export default function AddRoutineCard({
         onChangeText={(text) => handleChangeSet(index, "title", text)}
         placeholder="운동 이름"
       />
+      <TextInput
+        style={styles.input}
+        value={set.link}
+        onChangeText={(text) => handleChangeSet(index, "link", text)}
+        placeholder="영상 링크 (선택)"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
       <View style={styles.row}>
         <TextInput
           style={[styles.input, styles.rowInput]}

@@ -14,6 +14,9 @@ import {
   View,
 } from "react-native";
 
+const YOUTUBE_REGEX =
+  /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w\-]{11}([&?=#/\w-]*)?$/i;
+
 export default function AddRoutineScreen() {
   const addRoutineMutation = useAddRoutine();
   const {
@@ -63,6 +66,10 @@ export default function AddRoutineScreen() {
       if (current.kg !== "" && Number.isNaN(parsedKg)) {
         return `세트 ${i + 1}의 무게는 숫자만 입력해주세요.`;
       }
+
+      if (current.link.trim() && !YOUTUBE_REGEX.test(current.link.trim())) {
+        return `세트 ${i + 1}의 링크가 올바른 유튜브 주소인지 확인해주세요.`;
+      }
     }
 
     return null;
@@ -83,12 +90,13 @@ export default function AddRoutineScreen() {
     await addRoutineMutation.mutateAsync({
       title: title.trim(),
       category: selectedCategory.category,
-      routine: sets.map((set) => ({
-        title: set.title.trim(),
-        set: Number(set.set),
-        kg: Number(set.kg) || 0,
-      })),
-    });
+        routine: sets.map((set) => ({
+          title: set.title.trim(),
+          set: Number(set.set),
+          kg: Number(set.kg) || 0,
+          link: set.link.trim() || undefined,
+        })),
+      });
     Alert.alert("등록 완료", "새로운 루틴이 추가되었습니다.");
     resetForm();
   };
