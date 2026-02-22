@@ -3,16 +3,45 @@ import type {
   IRoutineInfo,
   IRoutineRequest,
 } from "@/interface/routine";
+import {
+  RoutineInfoSchema,
+  RoutineRequestSchema,
+  RoutineSchema,
+} from "@/interface/routine.schema";
 import { apiClient } from "@/utils/apiClient";
+import type { ZodType } from "zod";
+
+function parseWithSchema<T>(
+  schema: ZodType<T>,
+  payload: unknown,
+  fallbackMessage: string
+): T {
+  const result = schema.safeParse(payload);
+  if (!result.success) {
+    throw new Error(fallbackMessage);
+  }
+  return result.data;
+}
 
 export async function getRoutine(category?: string): Promise<IRoutine> {
   const query = category ? `?category=${category}` : "";
-  return apiClient<IRoutine>(`/routine${query}`, {
+  const response = await apiClient<unknown>(`/routine${query}`, {
     method: "GET",
   });
+  return parseWithSchema(
+    RoutineSchema,
+    response,
+    "루틴 목록 응답 형식이 올바르지 않습니다."
+  );
 }
 
 export async function addRoutine(routine: IRoutineRequest) {
+  parseWithSchema(
+    RoutineRequestSchema,
+    routine,
+    "루틴 생성 요청 데이터 형식이 올바르지 않습니다."
+  );
+
   await apiClient("/routine/addRoutine", {
     method: "POST",
     json: routine,
@@ -22,6 +51,12 @@ export async function addRoutine(routine: IRoutineRequest) {
 }
 
 export async function updateRoutineService(routine: IRoutine) {
+  parseWithSchema(
+    RoutineSchema,
+    routine,
+    "루틴 수정 요청 데이터 형식이 올바르지 않습니다."
+  );
+
   await apiClient("/routine/updateRoutine", {
     method: "PUT",
     json: routine,
@@ -49,7 +84,12 @@ export async function deleteRoutineByCategory(category: string) {
 }
 
 export async function getRoutineDetail(id?: string): Promise<IRoutineInfo> {
-  return apiClient<IRoutineInfo>(`/routine/${id}`, {
+  const response = await apiClient<unknown>(`/routine/${id}`, {
     method: "GET",
   });
+  return parseWithSchema(
+    RoutineInfoSchema,
+    response,
+    "루틴 상세 응답 형식이 올바르지 않습니다."
+  );
 }
