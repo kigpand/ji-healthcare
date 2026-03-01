@@ -3,6 +3,7 @@ import type {
   IRoutineInfo,
   IRoutineRequest,
 } from "@/interface/routine";
+import { validateRoutineRequestInput } from "@/schema/routine.schema";
 import { apiClient } from "@/utils/apiClient";
 
 export async function getRoutine(category?: string): Promise<IRoutine> {
@@ -13,9 +14,14 @@ export async function getRoutine(category?: string): Promise<IRoutine> {
 }
 
 export async function addRoutine(routine: IRoutineRequest) {
+  const validated = validateRoutineRequestInput(routine);
+  if (!validated.success) {
+    throw new Error(validated.messages ?? "루틴 입력값을 확인해주세요.");
+  }
+
   await apiClient("/routine/addRoutine", {
     method: "POST",
-    json: routine,
+    json: validated.data,
     parse: "none",
   });
   return true;
