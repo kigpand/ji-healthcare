@@ -1,6 +1,8 @@
 import { useAddCategory } from "@/hooks/mutate/useAddCategory";
+import { validateCategoryRequestInput } from "@/schema/category.schema";
 import { useCallback, useState } from "react";
 import {
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -13,12 +15,17 @@ export default function AddCategory() {
   const [newCategory, setNewCategory] = useState("");
 
   const handleAddCategory = useCallback(async () => {
-    const trimmed = newCategory.trim();
-    if (!trimmed || addCategoryMutation.isPending) {
+    if (addCategoryMutation.isPending) {
       return;
     }
 
-    await addCategoryMutation.mutateAsync(trimmed);
+    const validated = validateCategoryRequestInput({ category: newCategory });
+    if (!validated.success) {
+      Alert.alert("입력 확인", validated.message ?? "입력값을 확인해주세요.");
+      return;
+    }
+
+    await addCategoryMutation.mutateAsync(validated.data.category);
     setNewCategory("");
   }, [addCategoryMutation, newCategory]);
 
