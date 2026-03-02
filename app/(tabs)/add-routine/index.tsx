@@ -2,7 +2,8 @@ import AddRoutineCard from "@/components/add-routine/AddRoutineCard";
 import RoutineCategorySelect from "@/components/add-routine/RoutineCategorySelect";
 import { useAddRoutine } from "@/hooks/mutate/useAddRoutine";
 import { useCategorySelection } from "@/hooks/useCategorySelection";
-import { useRoutineForm, RoutineSetForm } from "@/hooks/useRoutineForm";
+import { RoutineSetForm, useRoutineForm } from "@/hooks/useRoutineForm";
+import { validateRoutineRequestInput } from "@/schema/routine.schema";
 import { Stack } from "expo-router";
 import {
   Alert,
@@ -13,9 +14,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-
-const YOUTUBE_REGEX =
-  /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w\-]{11}([&?=#/\w-]*)?$/i;
 
 export default function AddRoutineScreen() {
   const addRoutineMutation = useAddRoutine();
@@ -34,7 +32,7 @@ export default function AddRoutineScreen() {
     index: number,
     key: keyof RoutineSetForm,
     value: string,
-    options?: { numeric?: boolean },
+    options?: { numeric?: boolean }
   ) => {
     const sanitized = options?.numeric ? value.replace(/[^0-9]/g, "") : value;
     dispatch({ type: "UPDATE_SET", index, key, value: sanitized });
@@ -49,54 +47,19 @@ export default function AddRoutineScreen() {
     resetCategorySelection();
   };
 
-  const validateSets = () => {
-    for (let i = 0; i < sets.length; i++) {
-      const current = sets[i];
-      const parsedSet = Number(current.set);
-      const parsedKg = current.kg === "" ? 0 : Number(current.kg);
-
-      if (!current.title.trim()) {
-        return `세트 ${i + 1}의 운동 이름을 입력해주세요.`;
-      }
-
-      if (Number.isNaN(parsedSet) || parsedSet <= 0) {
-        return `세트 ${i + 1}의 횟수는 1 이상의 숫자만 입력해주세요.`;
-      }
-
-      if (current.kg !== "" && Number.isNaN(parsedKg)) {
-        return `세트 ${i + 1}의 무게는 숫자만 입력해주세요.`;
-      }
-
-      if (current.link.trim() && !YOUTUBE_REGEX.test(current.link.trim())) {
-        return `세트 ${i + 1}의 링크가 올바른 유튜브 주소인지 확인해주세요.`;
-      }
-    }
-
-    return null;
-  };
-
   const handleSubmit = async () => {
-    if (!title.trim() || !selectedCategory?.category) {
-      Alert.alert("입력 확인", "루틴 이름과 카테고리를 모두 선택해주세요.");
+    const validated = validateRoutineRequestInput({
+      title,
+      category: selectedCategory?.category,
+      routine: sets,
+    });
+
+    if (!validated.success) {
+      Alert.alert("입력 확인", validated.messages ?? "입력값을 확인해주세요.");
       return;
     }
 
-    const setValidationMessage = validateSets();
-    if (setValidationMessage) {
-      Alert.alert("세트 정보를 확인해주세요", setValidationMessage);
-      return;
-    }
-
-    await addRoutineMutation.mutateAsync({
-      title: title.trim(),
-      category: selectedCategory.category,
-        routine: sets.map((set) => ({
-          title: set.title.trim(),
-          set: Number(set.set),
-          kg: Number(set.kg) || 0,
-          link: set.link.trim() || undefined,
-        })),
-      });
+    await addRoutineMutation.mutateAsync(validated.data);
     Alert.alert("등록 완료", "새로운 루틴이 추가되었습니다.");
     resetForm();
   };
@@ -113,7 +76,9 @@ export default function AddRoutineScreen() {
           <TextInput
             style={styles.input}
             value={title}
-            onChangeText={(text) => dispatch({ type: "SET_TITLE", payload: text })}
+            onChangeText={(text) =>
+              dispatch({ type: "SET_TITLE", payload: text })
+            }
             placeholder="예: 상체 루틴"
           />
         </View>
