@@ -1,12 +1,8 @@
 import AddRoutineCard from "@/components/add-routine/AddRoutineCard";
 import RoutineCategorySelect from "@/components/add-routine/RoutineCategorySelect";
-import { useAddRoutine } from "@/hooks/mutate/useAddRoutine";
-import { useCategorySelection } from "@/hooks/useCategorySelection";
-import { RoutineSetForm, useRoutineForm } from "@/hooks/useRoutineForm";
-import { validateRoutineRequestInput } from "@/schema/routine.schema";
+import { useAddRoutineViewModel } from "@/hooks/useAddRoutineViewModel";
 import { Stack } from "expo-router";
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,53 +12,21 @@ import {
 } from "react-native";
 
 export default function AddRoutineScreen() {
-  const addRoutineMutation = useAddRoutine();
   const {
     categories,
-    isLoading: categoryLoading,
-    isError: categoryError,
+    categoryLoading,
+    categoryError,
     selectedCategory,
     handleChangeCategory,
-    resetCategorySelection,
-  } = useCategorySelection();
-  const { state: formState, dispatch } = useRoutineForm();
-  const { title, sets } = formState;
-
-  const handleChangeSet = (
-    index: number,
-    key: keyof RoutineSetForm,
-    value: string,
-    options?: { numeric?: boolean }
-  ) => {
-    const sanitized = options?.numeric ? value.replace(/[^0-9]/g, "") : value;
-    dispatch({ type: "UPDATE_SET", index, key, value: sanitized });
-  };
-
-  const handleAddSet = () => dispatch({ type: "ADD_SET" });
-  const handleRemoveSet = (index: number) =>
-    dispatch({ type: "REMOVE_SET", index });
-
-  const resetForm = () => {
-    dispatch({ type: "RESET" });
-    resetCategorySelection();
-  };
-
-  const handleSubmit = async () => {
-    const validated = validateRoutineRequestInput({
-      title,
-      category: selectedCategory?.category,
-      routine: sets,
-    });
-
-    if (!validated.success) {
-      Alert.alert("입력 확인", validated.messages ?? "입력값을 확인해주세요.");
-      return;
-    }
-
-    await addRoutineMutation.mutateAsync(validated.data);
-    Alert.alert("등록 완료", "새로운 루틴이 추가되었습니다.");
-    resetForm();
-  };
+    title,
+    sets,
+    isSubmitting,
+    handleChangeTitle,
+    handleChangeSet,
+    handleAddSet,
+    handleRemoveSet,
+    handleSubmit,
+  } = useAddRoutineViewModel();
 
   return (
     <View style={styles.container}>
@@ -76,9 +40,7 @@ export default function AddRoutineScreen() {
           <TextInput
             style={styles.input}
             value={title}
-            onChangeText={(text) =>
-              dispatch({ type: "SET_TITLE", payload: text })
-            }
+            onChangeText={handleChangeTitle}
             placeholder="예: 상체 루틴"
           />
         </View>
@@ -112,13 +74,13 @@ export default function AddRoutineScreen() {
         <Pressable
           style={[
             styles.submitButton,
-            addRoutineMutation.isPending && styles.disabledButton,
+            isSubmitting && styles.disabledButton,
           ]}
           onPress={handleSubmit}
-          disabled={addRoutineMutation.isPending}
+          disabled={isSubmitting}
         >
           <Text style={styles.submitText}>
-            {addRoutineMutation.isPending ? "등록 중..." : "루틴 등록"}
+            {isSubmitting ? "등록 중..." : "루틴 등록"}
           </Text>
         </Pressable>
       </ScrollView>
