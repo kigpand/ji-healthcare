@@ -1,50 +1,115 @@
-# Welcome to your Expo app 👋
+# Ji Healthcare
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo + React Native 기반의 운동 루틴/기록 앱입니다.
 
-## Get started
+## 프로젝트 상태
 
-1. Install dependencies
+- Status: In Progress (WIP)
+- 현재는 핵심 기능 구현/정리 단계이며 UI/기능이 계속 업데이트됩니다.
 
-   ```bash
-   npm install
-   ```
+## 주요 기능
 
-2. Start the app
+- 루틴 조회 및 카테고리별 필터링
+- 루틴 등록 (세트/무게/유튜브 링크 포함)
+- 운동 진행 화면 (세트 카운트, 휴식 타이머, 완료 처리)
+- 운동 기록 조회 및 기간별 차트
+- 카테고리 추가/삭제
 
-   ```bash
-   npx expo start
-   ```
+## 기술 스택
 
-In the output, you'll find options to open the app in a
+- Expo 54, React Native 0.81, TypeScript
+- expo-router (파일 기반 라우팅)
+- @tanstack/react-query (서버 상태 관리)
+- ji-type-schema (입력 정규화/유효성 검사)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 시작하기
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 1) 요구사항
 
-## Get a fresh project
+- Node.js 18+
 
-When you're ready, run:
+### 2) 설치
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3) 실행
 
-## Learn more
+```bash
+npm run start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+플랫폼별 실행:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm run android
+npm run ios
+npm run web
+```
 
-## Join the community
+### 4) 린트
 
-Join our community of developers creating universal apps.
+```bash
+npm run lint
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 환경 설정
+
+API 서버 주소는 `utils/config.ts`에서 관리합니다.
+
+```ts
+export const API_URL = __DEV__
+  ? "http://localhost:3010"
+  : "https://prod.example.com";
+```
+
+로컬 백엔드 포트/도메인에 맞게 수정하세요.
+
+## 프로젝트 구조
+
+```text
+app/                 # 라우트(화면) 계층
+components/          # UI 컴포넌트
+hooks/               # ViewModel/Query/Mutation 훅
+service/             # API 호출 계층
+schema/              # ji-type-schema 스키마/입력 검증
+interface/           # 타입 정의
+utils/               # 공통 유틸
+constants/           # 상수
+```
+
+## 아키텍처 가이드
+
+MVVM에 가까운 구조를 지향합니다.
+
+- View: `app/*`, `components/*`
+- ViewModel: `hooks/use*ViewModel.ts` (예: `hooks/useAddRoutineViewModel.ts`)
+- Model/Data: `service/*`, `schema/*`, `interface/*`
+
+화면은 렌더링에 집중하고, 상태/액션/검증 로직은 훅으로 분리하는 방식입니다.
+
+## 유효성 검사 정책
+
+- `ji-type-schema`를 사용해 입력값을 정규화(`trim`, 숫자 변환 등) 후 검증합니다.
+- 현재 등록(create) 흐름 중심으로 적용되어 있습니다.
+- 예시 파일:
+  - `schema/routine.schema.ts`
+  - `schema/category.schema.ts`
+  - `service/routineService.ts`
+  - `service/categoryService.ts`
+
+## Current UI (WIP)
+
+![Screen 1 (WIP)](./screenshots/1.png)
+![Screen 2 (WIP)](./screenshots/2.png)
+![Screen 3 (WIP)](./screenshots/3.png)
+![Screen 4 (WIP)](./screenshots/4.png)
+![Screen 5 (WIP)](./screenshots/5.png)
+
+## Roadmap
+
+- 루틴/카테고리 수정(편집) UX 고도화
+- 입력 유효성 검사 범위 확장 (수정/기타 입력 경로)
+- 에러/로딩 상태 UX 일관화
+- 테스트 코드 및 문서 보강
