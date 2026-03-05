@@ -101,11 +101,15 @@ MVVM에 가까운 구조를 지향합니다.
 
 ## Current UI (WIP)
 
-![Screen 1 (WIP)](./screenshots/1.png)
-![Screen 2 (WIP)](./screenshots/2.png)
-![Screen 3 (WIP)](./screenshots/3.png)
-![Screen 4 (WIP)](./screenshots/4.png)
-![Screen 5 (WIP)](./screenshots/5.png)
+<p align="center">
+  <img src="./screenshots/1.png" alt="Screen 1 (WIP)" width="180" />
+  <img src="./screenshots/2.png" alt="Screen 2 (WIP)" width="180" />
+  <img src="./screenshots/3.png" alt="Screen 3 (WIP)" width="180" />
+</p>
+<p align="center">
+  <img src="./screenshots/4.png" alt="Screen 4 (WIP)" width="180" />
+  <img src="./screenshots/5.png" alt="Screen 5 (WIP)" width="180" />
+</p>
 
 ## Roadmap
 
