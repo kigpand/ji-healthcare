@@ -27,7 +27,9 @@ export default function CategoryList({ item }: Props) {
 
   return (
     <View style={styles.listItem}>
-      <Text style={styles.categoryText}>{item.category}</Text>
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryText}>{item.category}</Text>
+      </View>
       <Pressable
         style={({ pressed }) => [
           styles.deleteButton,
@@ -48,17 +50,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 18,
+    elevation: 2,
+  },
+  categoryInfo: {
+    flex: 1,
+    paddingRight: 16,
   },
   categoryText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 4,
   },
   deleteButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: "#dc2626",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#fee2e2",
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -67,7 +84,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: "#fff",
+    color: "#dc2626",
     fontWeight: "600",
   },
 });
