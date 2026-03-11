@@ -1,7 +1,8 @@
 import { useDeleteCategory } from "@/hooks/mutate/useDeleteCategory";
 import type { ICategory } from "@/interface/category";
+import { showToast } from "@/utils/showToast";
 import { useCallback } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   item: ICategory;
@@ -18,12 +19,13 @@ export default function CategoryList({ item }: Props) {
       }
 
       await deleteCategoryMutation.mutateAsync(id);
+      showToast("카테고리가 삭제되었습니다.");
     },
     [deleteCategoryMutation]
   );
 
   const isDeleting =
-    deleteCategoryMutation.isPending && deletingCategory === item.category;
+    deleteCategoryMutation.isPending && deletingCategory === item._id;
 
   return (
     <View style={styles.listItem}>
@@ -36,7 +38,21 @@ export default function CategoryList({ item }: Props) {
           deleteCategoryMutation.isPending && styles.buttonDisabled,
           pressed && styles.buttonPressed,
         ]}
-        onPress={() => handleDeleteCategory(item._id)}
+        onPress={() =>
+          Alert.alert("카테고리 삭제", "정말 삭제하시겠습니까?", [
+            {
+              text: "아니오",
+              style: "cancel",
+            },
+            {
+              text: "예",
+              style: "destructive",
+              onPress: () => {
+                void handleDeleteCategory(item._id);
+              },
+            },
+          ])
+        }
         disabled={deleteCategoryMutation.isPending}
       >
         <Text style={styles.buttonText}>{isDeleting ? "삭제중" : "삭제"}</Text>
