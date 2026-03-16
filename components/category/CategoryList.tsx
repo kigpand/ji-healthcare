@@ -1,7 +1,8 @@
 import { useDeleteCategory } from "@/hooks/mutate/useDeleteCategory";
 import type { ICategory } from "@/interface/category";
+import { showToast } from "@/utils/showToast";
 import { useCallback } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   item: ICategory;
@@ -18,23 +19,40 @@ export default function CategoryList({ item }: Props) {
       }
 
       await deleteCategoryMutation.mutateAsync(id);
+      showToast("카테고리가 삭제되었습니다.");
     },
     [deleteCategoryMutation]
   );
 
   const isDeleting =
-    deleteCategoryMutation.isPending && deletingCategory === item.category;
+    deleteCategoryMutation.isPending && deletingCategory === item._id;
 
   return (
     <View style={styles.listItem}>
-      <Text style={styles.categoryText}>{item.category}</Text>
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryText}>{item.category}</Text>
+      </View>
       <Pressable
         style={({ pressed }) => [
           styles.deleteButton,
           deleteCategoryMutation.isPending && styles.buttonDisabled,
           pressed && styles.buttonPressed,
         ]}
-        onPress={() => handleDeleteCategory(item._id)}
+        onPress={() =>
+          Alert.alert("카테고리 삭제", "정말 삭제하시겠습니까?", [
+            {
+              text: "아니오",
+              style: "cancel",
+            },
+            {
+              text: "예",
+              style: "destructive",
+              onPress: () => {
+                void handleDeleteCategory(item._id);
+              },
+            },
+          ])
+        }
         disabled={deleteCategoryMutation.isPending}
       >
         <Text style={styles.buttonText}>{isDeleting ? "삭제중" : "삭제"}</Text>
@@ -48,17 +66,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 18,
+    elevation: 2,
+  },
+  categoryInfo: {
+    flex: 1,
+    paddingRight: 16,
   },
   categoryText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 4,
   },
   deleteButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: "#dc2626",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#fee2e2",
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -67,7 +100,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: "#fff",
+    color: "#dc2626",
     fontWeight: "600",
   },
 });
