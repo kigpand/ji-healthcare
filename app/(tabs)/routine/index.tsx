@@ -29,7 +29,7 @@ export default function Routine() {
 
       <View style={styles.routineHeader}>
         <Text style={styles.sectionTitle}>
-          {selectedCategory ? `${selectedCategory.category} 루틴` : "루틴 목록"}
+          {selectedCategory ? `${selectedCategory.name} 루틴` : "루틴 목록"}
         </Text>
       </View>
 

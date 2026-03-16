@@ -22,7 +22,7 @@ export function useAddRoutineViewModel() {
     (value: string) => {
       dispatch({ type: "SET_TITLE", payload: value });
     },
-    [dispatch],
+    [dispatch]
   );
 
   const handleChangeSet = useCallback(
@@ -30,12 +30,12 @@ export function useAddRoutineViewModel() {
       index: number,
       key: keyof RoutineSetForm,
       value: string,
-      options?: { numeric?: boolean },
+      options?: { numeric?: boolean }
     ) => {
       const sanitized = options?.numeric ? value.replace(/[^0-9]/g, "") : value;
       dispatch({ type: "UPDATE_SET", index, key, value: sanitized });
     },
-    [dispatch],
+    [dispatch]
   );
 
   const handleAddSet = useCallback(() => {
@@ -46,7 +46,7 @@ export function useAddRoutineViewModel() {
     (index: number) => {
       dispatch({ type: "REMOVE_SET", index });
     },
-    [dispatch],
+    [dispatch]
   );
 
   const resetForm = useCallback(() => {
@@ -57,7 +57,7 @@ export function useAddRoutineViewModel() {
   const handleSubmit = useCallback(async () => {
     const validated = validateRoutineRequestInput({
       title,
-      category: selectedCategory?.category,
+      category: selectedCategory?.name,
       routine: sets,
     });
 

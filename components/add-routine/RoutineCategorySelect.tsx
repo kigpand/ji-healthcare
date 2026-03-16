@@ -1,6 +1,6 @@
 import { ICategory } from "@/interface/category";
-import React, { useState } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -45,7 +45,7 @@ export default function RoutineCategorySelect({
             ? "카테고리를 불러오는 중..."
             : isError
             ? "카테고리를 불러오지 못했습니다."
-            : selectedCategory?.category ?? "카테고리를 선택해주세요"}
+            : selectedCategory?.name ?? "카테고리를 선택해주세요"}
         </Text>
         <MaterialIcons name="expand-more" size={20} color="#6b7280" />
       </Pressable>
@@ -67,9 +67,9 @@ export default function RoutineCategorySelect({
               <FlatList
                 style={styles.categoryList}
                 data={categories}
-                keyExtractor={(item) => item._id}
+                keyExtractor={(item) => item.id}
                 renderItem={({ item }) => {
-                  const selected = item._id === selectedCategory?._id;
+                  const selected = item.id === selectedCategory?.id;
                   return (
                     <Pressable
                       style={[
@@ -84,7 +84,7 @@ export default function RoutineCategorySelect({
                           selected && styles.categoryItemTextSelected,
                         ]}
                       >
-                        {item.category}
+                        {item.name}
                       </Text>
                     </Pressable>
                   );

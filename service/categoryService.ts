@@ -1,38 +1,39 @@
-import { ICategory } from "@/interface/category";
+import { supabase } from "@/lib/supabase";
 import { validateCategoryRequestInput } from "@/schema/category.schema";
-import { apiClient } from "@/utils/apiClient";
 
-export async function addCategory(category: string) {
-  const validated = validateCategoryRequestInput({ category });
+export async function addCategory(name: string) {
+  const validated = validateCategoryRequestInput({ category: name });
   if (!validated.success) {
     throw new Error(validated.message ?? "카테고리 입력값을 확인해주세요.");
   }
 
-  await apiClient("/category/addCategory", {
-    method: "POST",
-    json: validated.data,
-    parse: "none",
-  });
+  const { error } = await supabase
+    .from("categories")
+    .insert({ name })
+    .select()
+    .single();
+
+  if (error) throw error;
   return true;
 }
 
 export async function deleteCategory(categoryId: string) {
-  await apiClient("/category/deleteCategory", {
-    method: "DELETE",
-    json: { categoryId },
-    parse: "none",
-  });
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", categoryId);
+
+  if (error) throw error;
   return true;
 }
 
-export async function getCategory(): Promise<ICategory[]> {
-  return apiClient<ICategory[]>("/category", {
-    method: "GET",
-  });
-}
+export async function getCategory() {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .order("id", { ascending: true });
 
-export async function getCategoryOnce(category: string) {
-  return apiClient(`/category/${category}`, {
-    method: "GET",
-  });
+  console.log(data);
+  if (error) throw error;
+  return data ?? [];
 }
