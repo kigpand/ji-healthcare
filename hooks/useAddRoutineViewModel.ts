@@ -57,7 +57,7 @@ export function useAddRoutineViewModel() {
   const handleSubmit = useCallback(async () => {
     const validated = validateRoutineRequestInput({
       title,
-      category: selectedCategory?.name,
+      categoryId: selectedCategory?.id,
       routine: sets,
     });
 

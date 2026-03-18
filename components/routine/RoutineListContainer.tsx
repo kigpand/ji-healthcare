@@ -24,7 +24,7 @@ export default function RoutineListContainer({ selectedCategory }: Props) {
     data: routines,
     isLoading: routineLoading,
     isError: routineError,
-  } = useRoutine(selectedCategory?.category);
+  } = useRoutine(selectedCategory?.id);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRoutine, setSelectedRoutine] = useState<IRoutineInfo | null>(
     null
