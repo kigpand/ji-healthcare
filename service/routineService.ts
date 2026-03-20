@@ -60,9 +60,11 @@ function mapRoutine(row: RoutineRow): IRoutineInfo {
 }
 
 export async function getRoutine(categoryId?: string): Promise<IRoutine> {
-  let query = supabase.from("routines").select(
-    "id,title,category_id,created_at,categories(name),routine_items(id,title,kg,set_count,link,sort_order,created_at)"
-  );
+  let query = supabase
+    .from("routines")
+    .select(
+      "id,title,category_id,created_at,categories(name),routine_items(id,title,kg,set_count,link,sort_order,created_at)"
+    );
 
   if (categoryId) {
     query = query.eq("category_id", Number(categoryId));
@@ -79,6 +81,7 @@ export async function getRoutine(categoryId?: string): Promise<IRoutine> {
 
 export async function addRoutine(routine: IRoutineRequest) {
   const validated = validateRoutineRequestInput(routine);
+
   if (!validated.success) {
     throw new Error(validated.messages ?? "루틴 입력값을 확인해주세요.");
   }

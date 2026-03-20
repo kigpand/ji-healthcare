@@ -72,10 +72,7 @@ export default function AddRoutineScreen() {
         </Pressable>
 
         <Pressable
-          style={[
-            styles.submitButton,
-            isSubmitting && styles.disabledButton,
-          ]}
+          style={[styles.submitButton, isSubmitting && styles.disabledButton]}
           onPress={handleSubmit}
           disabled={isSubmitting}
         >
