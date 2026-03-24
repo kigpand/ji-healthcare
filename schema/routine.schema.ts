@@ -20,10 +20,10 @@ const routineNameSchema = stringSchema().refine(
   "required"
 );
 
-const categorySchema = stringSchema().refine(
-  (value) => value.trim().length > 0,
+const categoryIdSchema = numberSchema().refine(
+  (value) => Number.isInteger(value) && value > 0,
   "카테고리를 선택해주세요.",
-  "required"
+  "invalid_number"
 );
 
 const setCountSchema = numberSchema().refine(
@@ -56,8 +56,9 @@ export const routineDataSchema = objectSchema({
 export const routineInfoSchema = objectSchema({
   id: numberSchema(),
   title: routineNameSchema,
-  category: categorySchema,
-  date: stringSchema(),
+  category: stringSchema(),
+  categoryId: numberSchema().nullable(),
+  createdAt: stringSchema(),
   routine: arraySchema(routineDataSchema),
 });
 
@@ -67,7 +68,7 @@ export const routineSchema = objectSchema({
 
 export const routineRequestSchema = objectSchema({
   title: routineNameSchema,
-  category: categorySchema,
+  categoryId: categoryIdSchema,
   routine: arraySchema(routineDataSchema),
 });
 
@@ -80,7 +81,7 @@ type RoutineSetType = {
 
 type RoutineRequestType = {
   title?: unknown;
-  category?: unknown;
+  categoryId?: unknown;
   routine?: unknown;
 };
 
@@ -118,8 +119,7 @@ function normalizeRoutineSet(input: RoutineSetType) {
 
 export function normalizeRoutineRequestInput(input: RoutineRequestType) {
   const title = typeof input.title === "string" ? input.title.trim() : "";
-  const category =
-    typeof input.category === "string" ? input.category.trim() : "";
+  const categoryId = toNumber(input.categoryId);
 
   const routine = Array.isArray(input.routine)
     ? input.routine.map((item) =>
@@ -127,7 +127,7 @@ export function normalizeRoutineRequestInput(input: RoutineRequestType) {
       )
     : [];
 
-  return { title, category, routine };
+  return { title, categoryId, routine };
 }
 
 export function validateRoutineRequestInput(input: RoutineRequestType) {

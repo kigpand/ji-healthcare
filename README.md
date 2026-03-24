@@ -20,6 +20,7 @@ Expo + React Native 기반의 운동 루틴/기록 앱입니다.
 - Expo 54, React Native 0.81, TypeScript
 - expo-router (파일 기반 라우팅)
 - @tanstack/react-query (서버 상태 관리)
+- Supabase (데이터 저장/조회)
 - ji-type-schema (입력 정규화/유효성 검사)
 
 ## 시작하기
@@ -56,15 +57,16 @@ npm run lint
 
 ## 환경 설정
 
-API 서버 주소는 `utils/config.ts`에서 관리합니다.
+Supabase 연결에 필요한 환경 변수는 로컬 `.env`에서 관리합니다.
 
-```ts
-export const API_URL = __DEV__
-  ? "http://localhost:3010"
-  : "https://prod.example.com";
-```
+현재 서비스 계층은 Supabase 테이블을 직접 조회합니다.
 
-로컬 백엔드 포트/도메인에 맞게 수정하세요.
+- `categories`
+- `routines`
+- `routine_items`
+- `records`
+
+RLS를 사용하는 경우 위 테이블에 대해 앱의 사용 방식에 맞는 `select/insert/update/delete` 정책이 필요합니다.
 
 ## 프로젝트 구조
 
@@ -85,9 +87,9 @@ MVVM에 가까운 구조를 지향합니다.
 
 - View: `app/*`, `components/*`
 - ViewModel: `hooks/use*ViewModel.ts` (예: `hooks/useAddRoutineViewModel.ts`)
-- Model/Data: `service/*`, `schema/*`, `interface/*`
+- Model/Data: `service/*`, `schema/*`, `interface/*`, `lib/supabase.ts`
 
-화면은 렌더링에 집중하고, 상태/액션/검증 로직은 훅으로 분리하는 방식입니다.
+화면은 렌더링에 집중하고, 상태/액션/검증 로직은 훅으로 분리합니다. 데이터 접근은 `service/*`에서 Supabase로 처리합니다.
 
 ## 유효성 검사 정책
 

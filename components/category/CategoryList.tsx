@@ -25,12 +25,12 @@ export default function CategoryList({ item }: Props) {
   );
 
   const isDeleting =
-    deleteCategoryMutation.isPending && deletingCategory === item._id;
+    deleteCategoryMutation.isPending && deletingCategory === item.id;
 
   return (
     <View style={styles.listItem}>
       <View style={styles.categoryInfo}>
-        <Text style={styles.categoryText}>{item.category}</Text>
+        <Text style={styles.categoryText}>{item.name}</Text>
       </View>
       <Pressable
         style={({ pressed }) => [
@@ -48,7 +48,7 @@ export default function CategoryList({ item }: Props) {
               text: "예",
               style: "destructive",
               onPress: () => {
-                void handleDeleteCategory(item._id);
+                void handleDeleteCategory(item.id);
               },
             },
           ])

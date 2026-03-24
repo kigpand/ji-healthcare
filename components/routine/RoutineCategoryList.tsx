@@ -35,10 +35,10 @@ export default function RoutineCategoryList({
         contentContainerStyle={styles.categoryList}
       >
         {categories?.map((category) => {
-          const isSelected = category._id === selectedCategory?._id;
+          const isSelected = category.id === selectedCategory?.id;
           return (
             <Pressable
-              key={category._id}
+              key={category.id}
               style={[
                 styles.categoryButton,
                 isSelected && styles.categoryButtonSelected,
@@ -51,7 +51,7 @@ export default function RoutineCategoryList({
                   isSelected && styles.categoryTextSelected,
                 ]}
               >
-                {category.category}
+                {category.name}
               </Text>
             </Pressable>
           );

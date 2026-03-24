@@ -19,7 +19,7 @@ export default function Category() {
       <Stack.Screen options={{ title: "카테고리" }} />
       <FlatList
         data={isLoading || isError ? [] : categories ?? []}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => <CategoryList item={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={

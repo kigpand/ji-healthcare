@@ -35,7 +35,7 @@ export default function RecordCardModal({
                 router.push({
                   pathname: PATH.play,
                   params: {
-                    routineId: selectedRecord._id.toString(),
+                    routineId: selectedRecord.routineId.toString(),
                   },
                 });
               }

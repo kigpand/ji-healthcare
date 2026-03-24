@@ -11,6 +11,8 @@ type RoutineRunnerState = {
   isTimerRunning: boolean;
   finished: boolean;
   recordAdded: boolean;
+  recordSaving: boolean;
+  recordSaveFailed: boolean;
 };
 
 type RoutineRunnerAction =
@@ -22,7 +24,9 @@ type RoutineRunnerAction =
   | { type: "INCREMENT_SET"; payload: { index: number; max: number } }
   | { type: "MOVE_NEXT_ROUTINE" }
   | { type: "FINISH" }
-  | { type: "SET_RECORD_ADDED"; payload: boolean };
+  | { type: "SET_RECORD_ADDED"; payload: boolean }
+  | { type: "SET_RECORD_SAVING"; payload: boolean }
+  | { type: "SET_RECORD_SAVE_FAILED"; payload: boolean };
 
 function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
   switch (action.type) {
@@ -35,6 +39,8 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         isTimerRunning: false,
         finished: false,
         recordAdded: false,
+        recordSaving: false,
+        recordSaveFailed: false,
       };
     case "OPEN_TIMER":
       return {
@@ -84,6 +90,16 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         ...state,
         recordAdded: action.payload,
       };
+    case "SET_RECORD_SAVING":
+      return {
+        ...state,
+        recordSaving: action.payload,
+      };
+    case "SET_RECORD_SAVE_FAILED":
+      return {
+        ...state,
+        recordSaveFailed: action.payload,
+      };
     default:
       return state;
   }
@@ -97,6 +113,8 @@ const initialRunnerState: RoutineRunnerState = {
   isTimerRunning: false,
   finished: false,
   recordAdded: false,
+  recordSaving: false,
+  recordSaveFailed: false,
 };
 
 export function useRoutineRunner() {
@@ -125,6 +143,8 @@ export function useRoutineRunner() {
     isTimerRunning,
     finished,
     recordAdded,
+    recordSaving,
+    recordSaveFailed,
   } = state;
 
   const addRecordMutation = useAddRecord();
@@ -215,11 +235,37 @@ export function useRoutineRunner() {
   ]);
 
   useEffect(() => {
-    if (finished && routineDetail && !recordAdded) {
-      addRecordMutation.mutate(routineDetail);
-      dispatch({ type: "SET_RECORD_ADDED", payload: true });
+    if (
+      !finished ||
+      !routineDetail ||
+      recordAdded ||
+      recordSaving ||
+      recordSaveFailed
+    ) {
+      return;
     }
-  }, [finished, routineDetail, recordAdded, addRecordMutation]);
+
+    dispatch({ type: "SET_RECORD_SAVING", payload: true });
+
+    void addRecordMutation
+      .mutateAsync(routineDetail)
+      .then(() => {
+        dispatch({ type: "SET_RECORD_ADDED", payload: true });
+      })
+      .catch(() => {
+        dispatch({ type: "SET_RECORD_SAVE_FAILED", payload: true });
+      })
+      .finally(() => {
+        dispatch({ type: "SET_RECORD_SAVING", payload: false });
+      });
+  }, [
+    finished,
+    routineDetail,
+    recordAdded,
+    recordSaving,
+    recordSaveFailed,
+    addRecordMutation,
+  ]);
 
   return {
     routineId,
