@@ -14,9 +14,10 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const queryClient = new QueryClient();
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
