@@ -5,4 +5,5 @@ export const PATH = {
   record: "/(tabs)/record",
   play: "/play",
   addRoutine: "/(tabs)/add-routine",
+  editRoutine: "/routine/[routineId]/edit",
 } as const;

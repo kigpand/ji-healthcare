@@ -7,7 +7,6 @@ export function useRoutine(categoryId?: string) {
   return useQuery<IRoutine>({
     queryKey: [QUERY_KEY.ROUTINE, categoryId],
     queryFn: () => getRoutine(categoryId),
-    enabled: !!categoryId,
   });
 }
 
