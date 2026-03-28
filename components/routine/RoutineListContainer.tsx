@@ -71,9 +71,25 @@ export default function RoutineListContainer({ selectedCategory }: Props) {
         renderItem={({ item }) => (
           <View style={styles.routineCard}>
             <Text style={styles.routineTitle}>{item.title}</Text>
-            <TouchableOpacity onPress={() => handleRoutineStart(item)}>
-              <Text style={styles.routineStartButton}>시작</Text>
-            </TouchableOpacity>
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() =>
+                  router.push({
+                    pathname: PATH.editRoutine,
+                    params: { routineId: item.id.toString() },
+                  })
+                }
+              >
+                <Text style={styles.editButtonText}>수정</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.startButton}
+                onPress={() => handleRoutineStart(item)}
+              >
+                <Text style={styles.routineStartButton}>시작</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -115,6 +131,29 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 12,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  editButton: {
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  editButtonText: {
+    color: "#334155",
+    fontWeight: "600",
+    borderRadius: 6,
+    paddingVertical: 4,
+  },
+  startButton: {
+    backgroundColor: "#2563eb",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   emptyText: {
     textAlign: "center",
