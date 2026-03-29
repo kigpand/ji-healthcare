@@ -50,7 +50,11 @@ function getCurrentWorkoutStreak(records: IRecord[]) {
   }
 
   const uniqueDates = Array.from(
-    new Set(records.map((record) => toDateKey(record.date)).filter(Boolean))
+    new Set(
+      records
+        .map((record) => toDateKey(record.date))
+        .filter((value): value is string => value !== null)
+    )
   ).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
   if (!uniqueDates.length) {
