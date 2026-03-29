@@ -47,25 +47,32 @@ export default function HomeScreen() {
         <>
           <View style={styles.statsGrid}>
             <DashboardCard
-              label="최근 운동일"
-              value={dashboard.lastWorkoutDate ?? "기록 없음"}
+              label="연속 운동일"
+              value={`${dashboard.currentStreak}일`}
+              onPress={() => router.navigate(PATH.record)}
             />
             <DashboardCard
               label="최근 7일 운동"
               value={`${dashboard.weeklyCount}회`}
+              onPress={() => router.navigate(PATH.record)}
             />
             <DashboardCard
               label="주요 카테고리"
               value={dashboard.topCategory ?? "데이터 없음"}
+              onPress={() => router.navigate(PATH.record)}
             />
             <DashboardCard
               label="등록된 루틴"
               value={`${dashboard.routineCount}개`}
+              onPress={() => router.navigate(PATH.routine)}
             />
           </View>
 
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>현재 앱 현황</Text>
+            <Text style={styles.summaryText}>
+              최근 운동일은 {dashboard.lastWorkoutDate ?? "아직 없습니다"}.
+            </Text>
             <Text style={styles.summaryText}>
               카테고리 {dashboard.categoryCount}개, 루틴{" "}
               {dashboard.routineCount}개가 등록되어 있습니다.

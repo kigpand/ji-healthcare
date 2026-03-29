@@ -1,16 +1,25 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 type Props = {
   label: string;
   value: string;
+  onPress?: () => void;
 };
 
-export default function DashboardCard({ label, value }: Props) {
+export default function DashboardCard({ label, value, onPress }: Props) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        onPress && styles.cardInteractive,
+        pressed && onPress && styles.cardPressed,
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.value}>{value}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -22,6 +31,16 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     borderColor: "#e2e8f0",
+  },
+  cardInteractive: {
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  cardPressed: {
+    opacity: 0.85,
   },
   label: {
     fontSize: 13,
