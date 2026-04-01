@@ -14,6 +14,7 @@ type RoutineFormState = {
 
 type RoutineFormAction =
   | { type: "SET_TITLE"; payload: string }
+  | { type: "SET_FORM"; payload: RoutineFormState }
   | {
       type: "UPDATE_SET";
       index: number;
@@ -34,6 +35,8 @@ function reducer(state: RoutineFormState, action: RoutineFormAction) {
   switch (action.type) {
     case "SET_TITLE":
       return { ...state, title: action.payload };
+    case "SET_FORM":
+      return action.payload;
     case "UPDATE_SET": {
       const sanitized = action.numeric
         ? action.value.replace(/[^0-9]/g, "")
@@ -41,7 +44,7 @@ function reducer(state: RoutineFormState, action: RoutineFormAction) {
       return {
         ...state,
         sets: state.sets.map((set, index) =>
-          index === action.index ? { ...set, [action.key]: sanitized } : set,
+          index === action.index ? { ...set, [action.key]: sanitized } : set
         ),
       };
     }
@@ -68,5 +71,31 @@ export function useRoutineForm() {
   return {
     state,
     dispatch,
+  };
+}
+
+export function createRoutineFormState(payload?: {
+  title?: string;
+  routine?: {
+    title?: string;
+    set?: number;
+    kg?: number;
+    link?: string;
+  }[];
+}): RoutineFormState {
+  if (!payload) {
+    return createInitialState();
+  }
+
+  return {
+    title: payload.title ?? "",
+    sets: payload.routine?.length
+      ? payload.routine.map((item) => ({
+          title: item.title ?? "",
+          set: item.set?.toString() ?? "",
+          kg: item.kg?.toString() ?? "",
+          link: item.link ?? "",
+        }))
+      : createInitialState().sets,
   };
 }

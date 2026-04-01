@@ -1,15 +1,21 @@
+import DashboardCard from "@/components/home/DashboardCard";
+import HomeButton from "@/components/home/HomeButton";
+import RecentRecordSection from "@/components/home/RecentRecordSection";
 import { PATH } from "@/constants/path";
+import { useHomeDashboard } from "@/hooks/useHomeDashboard";
 import { Stack, useRouter } from "expo-router";
+import React from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { isLoading, isError, dashboard } = useHomeDashboard();
 
   return (
     <ScrollView
@@ -21,13 +27,72 @@ export default function HomeScreen() {
 
       <View style={styles.hero}>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>오늘의 루틴</Text>
+          <Text style={styles.heroBadgeText}>홈 대시보드</Text>
         </View>
-        <Text style={styles.heroTitle}>꾸준함이 최고의 운동입니다</Text>
+        <Text style={styles.heroTitle}>오늘의 흐름을 한눈에 확인하세요</Text>
         <Text style={styles.heroSubtitle}>
-          지금 바로 루틴을 확인하고 나만의 운동 기록을 채워보세요.
+          최근 기록, 이번 주 운동 횟수, 자주 하는 카테고리를 바로 볼 수
+          있습니다.
         </Text>
       </View>
+
+      {isLoading ? (
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="small" color="#2563eb" />
+          <Text style={styles.loadingText}>
+            대시보드 데이터를 불러오는 중입니다.
+          </Text>
+        </View>
+      ) : isError ? (
+        <View style={styles.loadingCard}>
+          <Text style={styles.errorTitle}>대시보드를 불러오지 못했습니다.</Text>
+          <Text style={styles.loadingText}>
+            잠시 후 다시 시도해 주세요.
+          </Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.statsGrid}>
+            <DashboardCard
+              label="연속 운동일"
+              value={`${dashboard.currentStreak}일`}
+              onPress={() => router.navigate(PATH.record)}
+            />
+            <DashboardCard
+              label="최근 7일 운동"
+              value={`${dashboard.weeklyCount}회`}
+              onPress={() => router.navigate(PATH.record)}
+            />
+            <DashboardCard
+              label="주요 카테고리"
+              value={dashboard.topCategory ?? "데이터 없음"}
+              onPress={() => router.navigate(PATH.record)}
+            />
+            <DashboardCard
+              label="등록된 루틴"
+              value={`${dashboard.routineCount}개`}
+              onPress={() => router.navigate(PATH.routine)}
+            />
+          </View>
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>현재 앱 현황</Text>
+            <Text style={styles.summaryText}>
+              최근 운동일은 {dashboard.lastWorkoutDate ?? "아직 없습니다"}.
+            </Text>
+            <Text style={styles.summaryText}>
+              카테고리 {dashboard.categoryCount}개, 루틴{" "}
+              {dashboard.routineCount}개가 등록되어 있습니다.
+            </Text>
+            <Text style={styles.summaryText}>
+              최근 30일 기준 가장 자주 수행한 카테고리는{" "}
+              {dashboard.topCategory ?? "아직 없습니다"}.
+            </Text>
+          </View>
+
+          <RecentRecordSection records={dashboard.recentRecords} />
+        </>
+      )}
 
       <View style={styles.grid}>
         <HomeButton
@@ -55,21 +120,6 @@ export default function HomeScreen() {
   );
 }
 
-type ButtonProps = {
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-};
-
-function HomeButton({ title, subtitle, onPress }: ButtonProps) {
-  return (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
-      <Text style={styles.buttonText}>{title}</Text>
-      <Text style={styles.buttonSubText}>{subtitle}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -79,10 +129,6 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 32,
     gap: 24,
-  },
-  grid: {
-    marginTop: 24,
-    gap: 16,
   },
   hero: {
     width: "100%",
@@ -111,26 +157,50 @@ const styles = StyleSheet.create({
   heroSubtitle: {
     color: "#cbd5f5",
     fontSize: 16,
+    lineHeight: 24,
   },
-  button: {
-    padding: 20,
+  loadingCard: {
+    borderRadius: 20,
     backgroundColor: "#fff",
-    borderRadius: 18,
-    alignItems: "flex-start",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 3,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
-  buttonText: {
-    fontSize: 20,
-    fontWeight: "600",
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#64748b",
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: "700",
     color: "#0f172a",
   },
-  buttonSubText: {
-    marginTop: 6,
-    color: "#6b7280",
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  summaryCard: {
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    padding: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  summaryText: {
     fontSize: 14,
+    lineHeight: 22,
+    color: "#475569",
+  },
+  grid: {
+    marginTop: 8,
+    gap: 16,
   },
 });

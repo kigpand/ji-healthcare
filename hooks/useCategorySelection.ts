@@ -15,8 +15,19 @@ export function useCategorySelection(initial?: ICategory | null) {
   const categoryList = useMemo(() => categories ?? [], [categories]);
 
   useEffect(() => {
-    if (!selectedCategory && categoryList.length > 0) {
-      setSelectedCategory(categoryList[0]);
+    if (!selectedCategory) {
+      if (categoryList.length > 0) {
+        setSelectedCategory(categoryList[0]);
+      }
+      return;
+    }
+
+    const hasSelectedCategory = categoryList.some(
+      (category) => category.id === selectedCategory.id
+    );
+
+    if (!hasSelectedCategory) {
+      setSelectedCategory(categoryList[0] ?? null);
     }
   }, [categoryList, selectedCategory]);
 
@@ -37,4 +48,3 @@ export function useCategorySelection(initial?: ICategory | null) {
     resetCategorySelection,
   };
 }
-
