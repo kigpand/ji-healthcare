@@ -16,6 +16,8 @@ export default function DashboardCard({ label, value, onPress }: Props) {
       ]}
       onPress={onPress}
       disabled={!onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${value}`}
     >
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.value}>{value}</Text>

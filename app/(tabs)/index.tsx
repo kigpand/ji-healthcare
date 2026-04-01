@@ -15,7 +15,7 @@ import {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isLoading, dashboard } = useHomeDashboard();
+  const { isLoading, isError, dashboard } = useHomeDashboard();
 
   return (
     <ScrollView
@@ -41,6 +41,13 @@ export default function HomeScreen() {
           <ActivityIndicator size="small" color="#2563eb" />
           <Text style={styles.loadingText}>
             대시보드 데이터를 불러오는 중입니다.
+          </Text>
+        </View>
+      ) : isError ? (
+        <View style={styles.loadingCard}>
+          <Text style={styles.errorTitle}>대시보드를 불러오지 못했습니다.</Text>
+          <Text style={styles.loadingText}>
+            잠시 후 다시 시도해 주세요.
           </Text>
         </View>
       ) : (
@@ -163,6 +170,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: "#64748b",
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
   },
   statsGrid: {
     flexDirection: "row",

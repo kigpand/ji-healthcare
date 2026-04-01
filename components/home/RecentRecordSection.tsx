@@ -1,5 +1,5 @@
-import { formatRecordDate } from "@/hooks/useHomeDashboard";
 import type { IRecord } from "@/interface/record";
+import { formatRecordDate } from "@/utils/date";
 import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -15,7 +15,9 @@ export default function RecentRecordSection({ records }: Props) {
           <View key={record._id} style={styles.recordCard}>
             <View style={styles.recordMeta}>
               <Text style={styles.recordTitle}>{record.title}</Text>
-              <Text style={styles.recordCategory}>{record.category}</Text>
+              <Text style={styles.recordCategory}>
+                {record.category || "미분류"}
+              </Text>
             </View>
             <Text style={styles.recordDate}>
               {formatRecordDate(record.date)}

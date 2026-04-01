@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 type Props = {
   title: string;
@@ -8,10 +8,16 @@ type Props = {
 
 export default function HomeButton({ title, subtitle, onPress }: Props) {
   return (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={subtitle}
+    >
       <Text style={styles.buttonText}>{title}</Text>
       <Text style={styles.buttonSubText}>{subtitle}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -26,6 +32,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
     elevation: 3,
+  },
+  buttonPressed: {
+    opacity: 0.88,
   },
   buttonText: {
     fontSize: 20,
