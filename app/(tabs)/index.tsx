@@ -17,6 +17,18 @@ export default function HomeScreen() {
   const router = useRouter();
   const { isLoading, isError, dashboard } = useHomeDashboard();
 
+  function handleOpenRecord(range?: number) {
+    if (!range) {
+      router.navigate(PATH.record);
+      return;
+    }
+
+    router.push({
+      pathname: PATH.record,
+      params: { range: range.toString() },
+    });
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -56,17 +68,17 @@ export default function HomeScreen() {
             <DashboardCard
               label="연속 운동일"
               value={`${dashboard.currentStreak}일`}
-              onPress={() => router.navigate(PATH.record)}
+              onPress={() => handleOpenRecord()}
             />
             <DashboardCard
               label="최근 7일 운동"
               value={`${dashboard.weeklyCount}회`}
-              onPress={() => router.navigate(PATH.record)}
+              onPress={() => handleOpenRecord(7)}
             />
             <DashboardCard
               label="주요 카테고리"
               value={dashboard.topCategory ?? "데이터 없음"}
-              onPress={() => router.navigate(PATH.record)}
+              onPress={() => handleOpenRecord(30)}
             />
             <DashboardCard
               label="등록된 루틴"

@@ -5,8 +5,8 @@ import RecordChart from "@/components/record/RecordChart";
 import { RANGE_OPTIONS } from "@/constants/dateOption";
 import { useRecord } from "@/hooks/queries/useRecord";
 import { IRecord } from "@/interface/record";
-import { Stack } from "expo-router";
-import { useMemo, useState } from "react";
+import { Stack, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -16,14 +16,19 @@ import {
 } from "react-native";
 
 export default function Record() {
-  const [selectedRange, setSelectedRange] = useState<number>(
-    RANGE_OPTIONS[0].value
+  const { range } = useLocalSearchParams<{ range?: string }>();
+  const [selectedRange, setSelectedRange] = useState<number>(() =>
+    getValidRange(range)
   );
   const [selectedRecord, setSelectedRecord] = useState<IRecord | null>(null);
   const { data: record, isLoading, isError } = useRecord(selectedRange);
   const recordList = useMemo(() => {
     return record ?? [];
   }, [record]);
+
+  useEffect(() => {
+    setSelectedRange(getValidRange(range));
+  }, [range]);
 
   return (
     <View style={styles.container}>
@@ -86,3 +91,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
+
+function getValidRange(range?: string) {
+  const parsedRange = Number(range);
+  const defaultRange = RANGE_OPTIONS[0].value;
+
+  if (Number.isNaN(parsedRange)) {
+    return defaultRange;
+  }
+
+  return RANGE_OPTIONS.some((option) => option.value === parsedRange)
+    ? parsedRange
+    : defaultRange;
+}
