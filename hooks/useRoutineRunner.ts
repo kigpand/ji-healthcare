@@ -1,5 +1,9 @@
 import { useAddRecord } from "@/hooks/mutate/useAddRecord";
 import { useRoutineDetail } from "@/hooks/queries/useRoutine";
+import {
+  cancelRestTimerNotifications,
+  scheduleRestTimerNotification,
+} from "@/service/notificationService";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 
@@ -182,6 +186,16 @@ export function useRoutineRunner() {
     return () => clearInterval(interval);
   }, [isTimerModal, isTimerRunning, countdown]);
 
+  useEffect(() => {
+    if (isTimerModal) {
+      return;
+    }
+
+    cancelRestTimerNotifications().catch((error) => {
+      console.error("Failed to cancel rest timer notifications", error);
+    });
+  }, [isTimerModal]);
+
   const handleCompleteSet = () => {
     if (!currentExercise || finished) {
       return;
@@ -192,9 +206,16 @@ export function useRoutineRunner() {
     }
 
     dispatch({ type: "OPEN_TIMER", payload: { countdown: defaultTime } });
+    scheduleRestTimerNotification(defaultTime).catch((error) => {
+      console.error("Failed to schedule rest timer notification", error);
+    });
   };
 
   const handleStartNextSet = useCallback(() => {
+    cancelRestTimerNotifications().catch((error) => {
+      console.error("Failed to cancel rest timer notifications", error);
+    });
+
     if (!currentExercise) {
       dispatch({ type: "CLOSE_TIMER", payload: { countdown: defaultTime } });
       return;
@@ -247,7 +268,7 @@ export function useRoutineRunner() {
 
     dispatch({ type: "SET_RECORD_SAVING", payload: true });
 
-    void addRecordMutation
+    addRecordMutation
       .mutateAsync(routineDetail)
       .then(() => {
         dispatch({ type: "SET_RECORD_ADDED", payload: true });
@@ -266,6 +287,16 @@ export function useRoutineRunner() {
     recordSaveFailed,
     addRecordMutation,
   ]);
+
+  useEffect(() => {
+    if (!finished) {
+      return;
+    }
+
+    cancelRestTimerNotifications().catch((error) => {
+      console.error("Failed to cancel rest timer notifications", error);
+    });
+  }, [finished]);
 
   return {
     routineId,

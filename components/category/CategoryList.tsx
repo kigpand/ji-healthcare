@@ -48,7 +48,9 @@ export default function CategoryList({ item }: Props) {
               text: "예",
               style: "destructive",
               onPress: () => {
-                void handleDeleteCategory(item.id);
+                handleDeleteCategory(item.id).catch((error) => {
+                  console.error("Failed to delete category", error);
+                });
               },
             },
           ])

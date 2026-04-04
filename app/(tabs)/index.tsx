@@ -3,10 +3,17 @@ import HomeButton from "@/components/home/HomeButton";
 import RecentRecordSection from "@/components/home/RecentRecordSection";
 import { PATH } from "@/constants/path";
 import { useHomeDashboard } from "@/hooks/useHomeDashboard";
+import {
+  cancelWorkoutReminderNotifications,
+  hasScheduledWorkoutReminder,
+  scheduleDailyWorkoutReminder,
+} from "@/service/notificationService";
 import { Stack, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +23,14 @@ import {
 export default function HomeScreen() {
   const router = useRouter();
   const { isLoading, isError, dashboard } = useHomeDashboard();
+  const [isReminderEnabled, setIsReminderEnabled] = useState(false);
+  const [isReminderLoading, setIsReminderLoading] = useState(true);
+
+  useEffect(() => {
+    loadReminderState().catch((error) => {
+      console.error("Failed to load reminder state", error);
+    });
+  }, []);
 
   function handleOpenRecord(range?: number) {
     if (!range) {
@@ -27,6 +42,41 @@ export default function HomeScreen() {
       pathname: PATH.record,
       params: { range: range.toString() },
     });
+  }
+
+  async function loadReminderState() {
+    try {
+      const enabled = await hasScheduledWorkoutReminder();
+      setIsReminderEnabled(enabled);
+    } catch (error) {
+      console.error("Failed to read scheduled workout reminders", error);
+      setIsReminderEnabled(false);
+    } finally {
+      setIsReminderLoading(false);
+    }
+  }
+
+  async function handleToggleReminder() {
+    setIsReminderLoading(true);
+
+    try {
+      if (isReminderEnabled) {
+        await cancelWorkoutReminderNotifications();
+        setIsReminderEnabled(false);
+        return;
+      }
+
+      const scheduled = await scheduleDailyWorkoutReminder();
+      setIsReminderEnabled(scheduled);
+    } catch (error) {
+      console.error("Failed to toggle workout reminder", error);
+      Alert.alert(
+        "리마인더 설정 실패",
+        "운동 리마인더를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요."
+      );
+    } finally {
+      setIsReminderLoading(false);
+    }
   }
 
   return (
@@ -103,6 +153,43 @@ export default function HomeScreen() {
           </View>
 
           <RecentRecordSection records={dashboard.recentRecords} />
+
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderTextWrapper}>
+              <Text style={styles.reminderTitle}>매일 운동 리마인더</Text>
+              <Text style={styles.reminderDescription}>
+                매일 오후 8시에 운동 시작 알림을 보냅니다.
+              </Text>
+            </View>
+            <Pressable
+              style={[
+                styles.reminderButton,
+                isReminderEnabled && styles.reminderButtonActive,
+                isReminderLoading && styles.reminderButtonDisabled,
+              ]}
+              onPress={() => {
+                handleToggleReminder().catch((error) => {
+                  console.error("Unexpected reminder toggle failure", error);
+                });
+              }}
+              disabled={isReminderLoading}
+              accessibilityRole="button"
+              accessibilityLabel="운동 리마인더 토글"
+            >
+              <Text
+                style={[
+                  styles.reminderButtonText,
+                  isReminderEnabled && styles.reminderButtonTextActive,
+                ]}
+              >
+                {isReminderLoading
+                  ? "확인 중..."
+                  : isReminderEnabled
+                    ? "켜짐"
+                    : "켜기"}
+              </Text>
+            </Pressable>
+          </View>
         </>
       )}
 
@@ -210,6 +297,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     color: "#475569",
+  },
+  reminderCard: {
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    padding: 20,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+  },
+  reminderTextWrapper: {
+    gap: 6,
+  },
+  reminderTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  reminderDescription: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#475569",
+  },
+  reminderButton: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    backgroundColor: "#dbeafe",
+  },
+  reminderButtonActive: {
+    backgroundColor: "#2563eb",
+  },
+  reminderButtonDisabled: {
+    opacity: 0.7,
+  },
+  reminderButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1d4ed8",
+  },
+  reminderButtonTextActive: {
+    color: "#fff",
   },
   grid: {
     marginTop: 8,
