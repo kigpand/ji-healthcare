@@ -18,6 +18,14 @@ export function getStartOfDayTimestamp(date: Date) {
   ).getTime();
 }
 
+export function getStartOfDayIsoString(date: Date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  ).toISOString();
+}
+
 export function formatRecordDate(value: string) {
   const date = parseDate(value);
 

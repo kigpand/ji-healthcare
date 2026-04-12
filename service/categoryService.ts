@@ -9,7 +9,7 @@ export async function addCategory(name: string) {
 
   const { error } = await supabase
     .from("categories")
-    .insert({ name })
+    .insert({ name: validated.data.category })
     .select()
     .single();
 

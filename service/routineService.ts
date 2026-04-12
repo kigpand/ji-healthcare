@@ -59,6 +59,51 @@ function mapRoutine(row: RoutineRow): IRoutineInfo {
   };
 }
 
+function buildRoutineItemsPayload(
+  routineId: number,
+  items: IRoutineInfo["routine"] | IRoutineRequest["routine"]
+) {
+  return items.map((item, index) => ({
+    routine_id: routineId,
+    title: item.title,
+    kg: item.kg,
+    set_count: item.set,
+    link: item.link ?? null,
+    sort_order: item.sortOrder ?? index,
+  }));
+}
+
+async function restoreRoutineSnapshot(previousRoutine: IRoutineInfo) {
+  const { error: restoreRoutineError } = await supabase
+    .from("routines")
+    .update({
+      title: previousRoutine.title,
+      category_id: previousRoutine.categoryId,
+    })
+    .eq("id", previousRoutine.id);
+
+  if (restoreRoutineError) {
+    throw restoreRoutineError;
+  }
+
+  const previousItems = buildRoutineItemsPayload(
+    previousRoutine.id,
+    previousRoutine.routine
+  );
+
+  if (!previousItems.length) {
+    return;
+  }
+
+  const { error: restoreItemsError } = await supabase
+    .from("routine_items")
+    .insert(previousItems);
+
+  if (restoreItemsError) {
+    throw restoreItemsError;
+  }
+}
+
 export async function getRoutine(categoryId?: string): Promise<IRoutine> {
   let query = supabase
     .from("routines")
@@ -97,14 +142,10 @@ export async function addRoutine(routine: IRoutineRequest) {
 
   if (routineError) throw routineError;
 
-  const routineItems = validated.data.routine.map((item, index) => ({
-    routine_id: insertedRoutine.id,
-    title: item.title,
-    kg: item.kg,
-    set_count: item.set,
-    link: item.link ?? null,
-    sort_order: index,
-  }));
+  const routineItems = buildRoutineItemsPayload(
+    insertedRoutine.id,
+    validated.data.routine
+  );
 
   const { error: itemError } = await supabase
     .from("routine_items")
@@ -119,11 +160,23 @@ export async function addRoutine(routine: IRoutineRequest) {
 }
 
 export async function updateRoutineService(routine: IRoutineInfo) {
+  const validated = validateRoutineRequestInput({
+    title: routine.title,
+    categoryId: routine.categoryId,
+    routine: routine.routine,
+  });
+
+  if (!validated.success) {
+    throw new Error(validated.messages ?? "루틴 입력값을 확인해주세요.");
+  }
+
+  const previousRoutine = await getRoutineDetail(routine.id.toString());
+
   const { error: routineError } = await supabase
     .from("routines")
     .update({
-      title: routine.title,
-      category_id: routine.categoryId,
+      title: validated.data.title,
+      category_id: validated.data.categoryId,
     })
     .eq("id", routine.id);
 
@@ -136,20 +189,28 @@ export async function updateRoutineService(routine: IRoutineInfo) {
 
   if (deleteItemsError) throw deleteItemsError;
 
-  const routineItems = routine.routine.map((item, index) => ({
-    routine_id: routine.id,
-    title: item.title,
-    kg: item.kg,
-    set_count: item.set,
-    link: item.link ?? null,
-    sort_order: item.sortOrder ?? index,
-  }));
+  const routineItems = buildRoutineItemsPayload(
+    routine.id,
+    validated.data.routine
+  );
 
   const { error: insertItemsError } = await supabase
     .from("routine_items")
     .insert(routineItems);
 
-  if (insertItemsError) throw insertItemsError;
+  if (insertItemsError) {
+    try {
+      await restoreRoutineSnapshot(previousRoutine);
+    } catch (restoreError) {
+      console.error("Failed to restore routine after update failure", {
+        routineId: routine.id,
+        restoreError,
+        insertItemsError,
+      });
+    }
+
+    throw insertItemsError;
+  }
 
   return true;
 }

@@ -10,6 +10,7 @@ export function useAddRecord() {
     mutationFn: addRecord,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY.RECORD] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY.ROUTINE] });
     },
     onError: (error) => {
       showApiErrorAlert(error, "운동 기록 추가에 실패했습니다.");

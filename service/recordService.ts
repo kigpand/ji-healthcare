@@ -1,6 +1,7 @@
 import { IRecord } from "@/interface/record";
 import type { IRoutineInfo } from "@/interface/routine";
 import { supabase } from "@/lib/supabase";
+import { getStartOfDayIsoString } from "@/utils/date";
 
 type CategoryRelation = {
   name: string;
@@ -42,7 +43,7 @@ export async function getRecord(days?: number) {
   if (typeof days === "number" && days > 0) {
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - days);
-    query = query.gte("recorded_at", fromDate.toISOString());
+    query = query.gte("recorded_at", getStartOfDayIsoString(fromDate));
   }
 
   const { data, error } = await query;

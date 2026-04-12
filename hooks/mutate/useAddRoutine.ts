@@ -13,6 +13,9 @@ export function useAddRoutine() {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEY.ROUTINE],
       });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEY.CATEGORY],
+      });
     },
     onError: (error) => {
       showApiErrorAlert(error, "루틴 등록에 실패했습니다.");
