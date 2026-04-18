@@ -36,8 +36,12 @@ export default function Play() {
     totalRoutines,
     isTimerModal,
     countdown,
+    recordAdded,
+    recordSaving,
+    recordSaveFailed,
     handleCompleteSet,
     handleStartNextSet,
+    handleRetrySaveRecord,
   } = useRoutineRunner();
 
   if (isLoading) {
@@ -88,8 +92,18 @@ export default function Play() {
         seconds={countdown}
         onStartNext={handleStartNextSet}
       />
-      <CompletionModal visible={finished} />
-      <VideoModal visible={videoVisible} link={videoLink ?? undefined} onClose={closeVideo} />
+      <CompletionModal
+        visible={finished}
+        recordAdded={recordAdded}
+        recordSaving={recordSaving}
+        recordSaveFailed={recordSaveFailed}
+        onRetrySaveRecord={handleRetrySaveRecord}
+      />
+      <VideoModal
+        visible={videoVisible}
+        link={videoLink ?? undefined}
+        onClose={closeVideo}
+      />
     </View>
   );
 }

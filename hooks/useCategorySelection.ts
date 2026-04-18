@@ -1,5 +1,6 @@
 import { useCategory } from "@/hooks/queries/useCategory";
 import { ICategory } from "@/interface/category";
+import { getErrorMessage } from "@/utils/errorAlert";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function useCategorySelection(initial?: ICategory | null) {
@@ -7,12 +8,14 @@ export function useCategorySelection(initial?: ICategory | null) {
     data: categories,
     isLoading,
     isError,
+    error,
   } = useCategory();
   const [selectedCategory, setSelectedCategory] = useState<ICategory | null>(
     initial ?? null,
   );
 
   const categoryList = useMemo(() => categories ?? [], [categories]);
+  const errorMessage = useMemo(() => getErrorMessage(error), [error]);
 
   useEffect(() => {
     if (!selectedCategory) {
@@ -43,6 +46,7 @@ export function useCategorySelection(initial?: ICategory | null) {
     categories: categoryList,
     isLoading,
     isError,
+    errorMessage,
     selectedCategory,
     handleChangeCategory,
     resetCategorySelection,

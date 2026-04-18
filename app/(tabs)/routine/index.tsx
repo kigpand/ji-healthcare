@@ -9,6 +9,7 @@ export default function Routine() {
     categories,
     isLoading,
     isError,
+    errorMessage,
     selectedCategory,
     handleChangeCategory,
   } = useCategorySelection();
@@ -22,10 +23,15 @@ export default function Routine() {
           categories={categories}
           isLoading={isLoading}
           isError={isError}
+          errorMessage={errorMessage}
           selectedCategory={selectedCategory}
           onSelectCategory={handleChangeCategory}
         />
       </View>
+
+      {isError ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
 
       <View style={styles.routineHeader}>
         <Text style={styles.sectionTitle}>
@@ -57,5 +63,9 @@ const styles = StyleSheet.create({
   routineHeader: {
     marginTop: 24,
     marginBottom: 12,
+  },
+  errorText: {
+    color: "#b91c1c",
+    lineHeight: 20,
   },
 });

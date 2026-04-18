@@ -1,6 +1,7 @@
 import AddCategory from "@/components/category/AddCategory";
 import CategoryList from "@/components/category/CategoryList";
 import { useCategory } from "@/hooks/queries/useCategory";
+import { getErrorMessage } from "@/utils/errorAlert";
 import { Stack } from "expo-router";
 import React from "react";
 import {
@@ -12,7 +13,8 @@ import {
 } from "react-native";
 
 export default function Category() {
-  const { data: categories, isLoading, isError } = useCategory();
+  const { data: categories, isLoading, isError, error } = useCategory();
+  const errorMessage = getErrorMessage(error);
 
   return (
     <View style={styles.container}>
@@ -55,9 +57,7 @@ export default function Category() {
 
             {isError ? (
               <View style={styles.feedbackState}>
-                <Text style={styles.feedbackText}>
-                  카테고리를 불러오지 못했습니다.
-                </Text>
+                <Text style={styles.feedbackText}>{errorMessage}</Text>
               </View>
             ) : null}
           </>

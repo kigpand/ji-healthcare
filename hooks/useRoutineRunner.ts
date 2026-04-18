@@ -288,6 +288,27 @@ export function useRoutineRunner() {
     addRecordMutation,
   ]);
 
+  const handleRetrySaveRecord = useCallback(() => {
+    if (!finished || !routineDetail || recordSaving) {
+      return;
+    }
+
+    dispatch({ type: "SET_RECORD_SAVE_FAILED", payload: false });
+    dispatch({ type: "SET_RECORD_SAVING", payload: true });
+
+    addRecordMutation
+      .mutateAsync(routineDetail)
+      .then(() => {
+        dispatch({ type: "SET_RECORD_ADDED", payload: true });
+      })
+      .catch(() => {
+        dispatch({ type: "SET_RECORD_SAVE_FAILED", payload: true });
+      })
+      .finally(() => {
+        dispatch({ type: "SET_RECORD_SAVING", payload: false });
+      });
+  }, [finished, routineDetail, recordSaving, addRecordMutation]);
+
   useEffect(() => {
     if (!finished) {
       return;
@@ -310,7 +331,11 @@ export function useRoutineRunner() {
     totalRoutines,
     isTimerModal,
     countdown,
+    recordAdded,
+    recordSaving,
+    recordSaveFailed,
     handleCompleteSet,
     handleStartNextSet,
+    handleRetrySaveRecord,
   };
 }

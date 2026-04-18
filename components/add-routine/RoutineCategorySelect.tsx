@@ -16,6 +16,7 @@ type Props = {
   categories: ICategory[];
   isLoading: boolean;
   isError: boolean;
+  errorMessage?: string;
   onSelectCategory: (category: ICategory) => void;
 };
 
@@ -24,6 +25,7 @@ export default function RoutineCategorySelect({
   categories,
   isLoading,
   isError,
+  errorMessage,
   onSelectCategory,
 }: Props) {
   const [visible, setVisible] = useState(false);
@@ -44,7 +46,7 @@ export default function RoutineCategorySelect({
           {isLoading
             ? "카테고리를 불러오는 중..."
             : isError
-            ? "카테고리를 불러오지 못했습니다."
+            ? errorMessage ?? "카테고리를 불러오지 못했습니다."
             : selectedCategory?.name ?? "카테고리를 선택해주세요"}
         </Text>
         <MaterialIcons name="expand-more" size={20} color="#6b7280" />
@@ -62,7 +64,9 @@ export default function RoutineCategorySelect({
             {isLoading ? (
               <ActivityIndicator />
             ) : isError ? (
-              <Text>카테고리를 불러오지 못했습니다.</Text>
+              <Text style={styles.errorText}>
+                {errorMessage ?? "카테고리를 불러오지 못했습니다."}
+              </Text>
             ) : (
               <FlatList
                 style={styles.categoryList}
@@ -172,5 +176,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: 20,
     color: "#6b7280",
+  },
+  errorText: {
+    color: "#b91c1c",
+    lineHeight: 20,
   },
 });
