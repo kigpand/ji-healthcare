@@ -42,7 +42,7 @@ export async function getRecord(days?: number) {
 
   if (typeof days === "number" && days > 0) {
     const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - days);
+    fromDate.setDate(fromDate.getDate() - (days - 1));
     query = query.gte("recorded_at", getStartOfDayIsoString(fromDate));
   }
 
