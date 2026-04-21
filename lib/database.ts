@@ -8,6 +8,9 @@ let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 async function createDatabase() {
   const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
 
+  // PRAGMA: SQLite 동작 옵션 설정, 여기서는 외래 키 제약을 활성화합니다.
+  // CREATE TABLE IF NOT EXISTS: 테이블이 없을 때만 생성합니다.
+  // CREATE INDEX IF NOT EXISTS: 조회 성능을 위해 인덱스를 만들되, 이미 있으면 다시 만들지 않습니다.
   await database.execAsync(`
     PRAGMA foreign_keys = ON;
 
@@ -80,13 +83,16 @@ export async function runInTransaction<T>(
 ) {
   const database = await getDatabase();
 
+  // BEGIN IMMEDIATE TRANSACTION: 쓰기 트랜잭션을 시작하고 이후 작업을 하나의 묶음으로 처리합니다.
   await database.execAsync("BEGIN IMMEDIATE TRANSACTION");
 
   try {
     const result = await operation(database);
+    // COMMIT: 트랜잭션 안의 작업이 모두 성공했을 때 변경사항을 최종 저장합니다.
     await database.execAsync("COMMIT");
     return result;
   } catch (error) {
+    // ROLLBACK: 중간에 실패가 발생하면 지금까지의 변경사항을 모두 취소합니다.
     await database.execAsync("ROLLBACK");
     throw error;
   }

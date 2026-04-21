@@ -3,49 +3,39 @@ import type {
   IRoutineInfo,
   IRoutineRequest,
 } from "@/interface/routine";
-import { supabase } from "@/lib/supabase";
+import { getDatabase, runInTransaction } from "@/lib/database";
 import { validateRoutineRequestInput } from "@/schema/routine.schema";
-
-type RoutineItemRow = {
-  id: number;
-  kg: number | null;
-  set_count: number | null;
-  title: string;
-  link: string | null;
-  sort_order: number | null;
-  created_at?: string;
-};
-
-type CategoryRelation = {
-  name: string;
-} | null;
 
 type RoutineRow = {
   id: number;
   title: string;
   category_id: number | null;
   created_at: string;
-  categories?: CategoryRelation | CategoryRelation[];
-  routine_items?: RoutineItemRow[] | null;
+  category_name: string | null;
 };
 
-function getCategoryName(categories?: CategoryRelation | CategoryRelation[]) {
-  if (Array.isArray(categories)) {
-    return categories[0]?.name ?? "";
-  }
+type RoutineItemRow = {
+  id: number;
+  routine_id: number;
+  title: string;
+  kg: number | null;
+  set_count: number | null;
+  link: string | null;
+  sort_order: number | null;
+};
 
-  return categories?.name ?? "";
-}
-
-function mapRoutine(row: RoutineRow): IRoutineInfo {
-  const routineItems = [...(row.routine_items ?? [])].sort(
+function mapRoutine(
+  row: RoutineRow,
+  items: RoutineItemRow[] = []
+): IRoutineInfo {
+  const routineItems = [...items].sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
 
   return {
     id: row.id,
     title: row.title,
-    category: getCategoryName(row.categories),
+    category: row.category_name ?? "",
     categoryId: row.category_id,
     createdAt: row.created_at,
     routine: routineItems.map((item) => ({
@@ -64,64 +54,92 @@ function buildRoutineItemsPayload(
   items: IRoutineInfo["routine"] | IRoutineRequest["routine"]
 ) {
   return items.map((item, index) => ({
-    routine_id: routineId,
     title: item.title,
     kg: item.kg,
-    set_count: item.set,
+    setCount: item.set,
     link: item.link ?? null,
-    sort_order: item.sortOrder ?? index,
+    sortOrder: item.sortOrder ?? index,
+    routineId,
   }));
 }
 
-async function restoreRoutineSnapshot(previousRoutine: IRoutineInfo) {
-  const { error: restoreRoutineError } = await supabase
-    .from("routines")
-    .update({
-      title: previousRoutine.title,
-      category_id: previousRoutine.categoryId,
-    })
-    .eq("id", previousRoutine.id);
+async function getRoutineRows(categoryId?: string) {
+  const db = await getDatabase();
+  const hasCategoryFilter = !!categoryId;
 
-  if (restoreRoutineError) {
-    throw restoreRoutineError;
-  }
-
-  const previousItems = buildRoutineItemsPayload(
-    previousRoutine.id,
-    previousRoutine.routine
+  const routines = await db.getAllAsync<RoutineRow>(
+    `
+      SELECT
+        routines.id,
+        routines.title,
+        routines.category_id,
+        routines.created_at,
+        categories.name AS category_name
+      FROM routines
+      LEFT JOIN categories ON categories.id = routines.category_id
+      ${hasCategoryFilter ? "WHERE routines.category_id = ?" : ""}
+      ORDER BY routines.id ASC
+    `,
+    ...(hasCategoryFilter ? [Number(categoryId)] : [])
   );
 
-  if (!previousItems.length) {
-    return;
+  const items = await db.getAllAsync<RoutineItemRow>(
+    `
+      SELECT id, routine_id, title, kg, set_count, link, sort_order
+      FROM routine_items
+      ORDER BY routine_id ASC, sort_order ASC, id ASC
+    `
+  );
+
+  const itemsByRoutineId = new Map<number, RoutineItemRow[]>();
+
+  items.forEach((item) => {
+    const list = itemsByRoutineId.get(item.routine_id) ?? [];
+    list.push(item);
+    itemsByRoutineId.set(item.routine_id, list);
+  });
+
+  return routines.map((row) => mapRoutine(row, itemsByRoutineId.get(row.id)));
+}
+
+async function getRoutineById(routineId: number) {
+  const db = await getDatabase();
+  const routine = await db.getFirstAsync<RoutineRow>(
+    `
+      SELECT
+        routines.id,
+        routines.title,
+        routines.category_id,
+        routines.created_at,
+        categories.name AS category_name
+      FROM routines
+      LEFT JOIN categories ON categories.id = routines.category_id
+      WHERE routines.id = ?
+    `,
+    routineId
+  );
+
+  if (!routine) {
+    return null;
   }
 
-  const { error: restoreItemsError } = await supabase
-    .from("routine_items")
-    .insert(previousItems);
+  const items = await db.getAllAsync<RoutineItemRow>(
+    `
+      SELECT id, routine_id, title, kg, set_count, link, sort_order
+      FROM routine_items
+      WHERE routine_id = ?
+      ORDER BY sort_order ASC, id ASC
+    `,
+    routineId
+  );
 
-  if (restoreItemsError) {
-    throw restoreItemsError;
-  }
+  return mapRoutine(routine, items);
 }
 
 export async function getRoutine(categoryId?: string): Promise<IRoutine> {
-  let query = supabase
-    .from("routines")
-    .select(
-      "id,title,category_id,created_at,categories(name),routine_items(id,title,kg,set_count,link,sort_order,created_at)"
-    );
+  const routines = await getRoutineRows(categoryId);
 
-  if (categoryId) {
-    query = query.eq("category_id", Number(categoryId));
-  }
-
-  const { data, error } = await query.order("id", { ascending: true });
-
-  if (error) throw error;
-
-  return {
-    routines: (data ?? []).map((row) => mapRoutine(row as RoutineRow)),
-  };
+  return { routines };
 }
 
 export async function addRoutine(routine: IRoutineRequest) {
@@ -131,30 +149,39 @@ export async function addRoutine(routine: IRoutineRequest) {
     throw new Error(validated.messages ?? "루틴 입력값을 확인해주세요.");
   }
 
-  const { data: insertedRoutine, error: routineError } = await supabase
-    .from("routines")
-    .insert({
-      title: validated.data.title,
-      category_id: validated.data.categoryId,
-    })
-    .select("id")
-    .single();
+  await runInTransaction(async (tx) => {
+    const insertedRoutine = await tx.runAsync(
+      `
+        INSERT INTO routines (title, category_id, created_at)
+        VALUES (?, ?, ?)
+      `,
+      validated.data.title,
+      validated.data.categoryId,
+      new Date().toISOString()
+    );
 
-  if (routineError) throw routineError;
+    const routineId = insertedRoutine.lastInsertRowId;
+    const routineItems = buildRoutineItemsPayload(
+      routineId,
+      validated.data.routine
+    );
 
-  const routineItems = buildRoutineItemsPayload(
-    insertedRoutine.id,
-    validated.data.routine
-  );
-
-  const { error: itemError } = await supabase
-    .from("routine_items")
-    .insert(routineItems);
-
-  if (itemError) {
-    await supabase.from("routines").delete().eq("id", insertedRoutine.id);
-    throw itemError;
-  }
+    for (const item of routineItems) {
+      await tx.runAsync(
+        `
+          INSERT INTO routine_items
+            (routine_id, title, kg, set_count, link, sort_order)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        item.routineId,
+        item.title,
+        item.kg,
+        item.setCount,
+        item.link,
+        item.sortOrder
+      );
+    }
+  });
 
   return true;
 }
@@ -170,78 +197,83 @@ export async function updateRoutineService(routine: IRoutineInfo) {
     throw new Error(validated.messages ?? "루틴 입력값을 확인해주세요.");
   }
 
-  const previousRoutine = await getRoutineDetail(routine.id.toString());
+  await runInTransaction(async (tx) => {
+    const updatedRoutine = await tx.runAsync(
+      `
+        UPDATE routines
+        SET title = ?, category_id = ?
+        WHERE id = ?
+      `,
+      validated.data.title,
+      validated.data.categoryId,
+      routine.id
+    );
 
-  const { error: routineError } = await supabase
-    .from("routines")
-    .update({
-      title: validated.data.title,
-      category_id: validated.data.categoryId,
-    })
-    .eq("id", routine.id);
-
-  if (routineError) throw routineError;
-
-  const { error: deleteItemsError } = await supabase
-    .from("routine_items")
-    .delete()
-    .eq("routine_id", routine.id);
-
-  if (deleteItemsError) throw deleteItemsError;
-
-  const routineItems = buildRoutineItemsPayload(
-    routine.id,
-    validated.data.routine
-  );
-
-  const { error: insertItemsError } = await supabase
-    .from("routine_items")
-    .insert(routineItems);
-
-  if (insertItemsError) {
-    try {
-      await restoreRoutineSnapshot(previousRoutine);
-    } catch (restoreError) {
-      console.error("Failed to restore routine after update failure", {
-        routineId: routine.id,
-        restoreError,
-        insertItemsError,
-      });
+    if ((updatedRoutine.changes ?? 0) === 0) {
+      throw new Error("수정할 루틴을 찾지 못했습니다.");
     }
 
-    throw insertItemsError;
-  }
+    await tx.runAsync(
+      "DELETE FROM routine_items WHERE routine_id = ?",
+      routine.id
+    );
+
+    const routineItems = buildRoutineItemsPayload(
+      routine.id,
+      validated.data.routine
+    );
+
+    for (const item of routineItems) {
+      await tx.runAsync(
+        `
+          INSERT INTO routine_items
+            (routine_id, title, kg, set_count, link, sort_order)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        item.routineId,
+        item.title,
+        item.kg,
+        item.setCount,
+        item.link,
+        item.sortOrder
+      );
+    }
+  });
 
   return true;
 }
 
 export async function deleteRoutine(id: number) {
-  const { error } = await supabase.from("routines").delete().eq("id", id);
+  const db = await getDatabase();
+  const result = await db.runAsync("DELETE FROM routines WHERE id = ?", id);
 
-  if (error) throw error;
+  if ((result.changes ?? 0) === 0) {
+    throw new Error("삭제할 루틴을 찾지 못했습니다.");
+  }
+
   return "success";
 }
 
 export async function deleteRoutineByCategory(categoryId: string) {
-  const { error } = await supabase
-    .from("routines")
-    .delete()
-    .eq("category_id", Number(categoryId));
+  const db = await getDatabase();
 
-  if (error) throw error;
+  await db.runAsync("DELETE FROM routines WHERE category_id = ?", Number(categoryId));
+
   return "success";
 }
 
 export async function getRoutineDetail(id?: string): Promise<IRoutineInfo> {
-  const { data, error } = await supabase
-    .from("routines")
-    .select(
-      "id,title,category_id,created_at,categories(name),routine_items(id,title,kg,set_count,link,sort_order,created_at)"
-    )
-    .eq("id", Number(id))
-    .single();
+  const numericId = Number(id);
 
-  if (error) throw error;
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    throw new Error("루틴 정보가 올바르지 않습니다.");
+  }
 
-  return mapRoutine(data as RoutineRow);
+  const routine = await getRoutineById(numericId);
+
+  if (!routine) {
+    throw new Error("루틴을 찾지 못했습니다.");
+  }
+
+  return routine;
 }
