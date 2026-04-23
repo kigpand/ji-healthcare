@@ -19,8 +19,8 @@ Expo + React Native 기반의 운동 루틴/기록 앱입니다.
 
 - Expo 54, React Native 0.81, TypeScript
 - expo-router (파일 기반 라우팅)
-- @tanstack/react-query (서버 상태 관리)
-- Supabase (데이터 저장/조회)
+- @tanstack/react-query (앱 데이터 캐시)
+- expo-sqlite (로컬 데이터 저장/조회)
 - ji-type-schema (입력 정규화/유효성 검사)
 
 ## 시작하기
@@ -36,6 +36,12 @@ npm install
 ```
 
 패키지 매니저는 `npm` 기준으로 관리합니다.
+
+로컬 저장소를 사용하려면 `expo-sqlite`가 필요합니다. 새 환경에서는 아래처럼 Expo 권장 방식으로 설치해주세요.
+
+```bash
+npx expo install expo-sqlite
+```
 
 ### 3) 실행
 
@@ -59,25 +65,12 @@ npm run lint
 
 ## 환경 설정
 
-Supabase 연결에 필요한 환경 변수는 로컬 `.env`에서 관리합니다.
-
-```bash
-cp .env.example .env
-```
-
-필수 환경 변수:
-
-- `EXPO_PUBLIC_SUPABASE_URL`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-
-현재 서비스 계층은 Supabase 테이블을 직접 조회합니다.
+현재 서비스 계층은 로컬 SQLite 테이블을 직접 조회합니다.
 
 - `categories`
 - `routines`
 - `routine_items`
 - `records`
-
-RLS를 사용하는 경우 위 테이블에 대해 앱의 사용 방식에 맞는 `select/insert/update/delete` 정책이 필요합니다.
 
 현재 카테고리는 연결된 `routines`, `records`가 있으면 삭제되지 않도록 막아두었습니다. 먼저 관련 데이터를 정리한 뒤 삭제해주세요.
 
@@ -100,9 +93,9 @@ MVVM에 가까운 구조를 지향합니다.
 
 - View: `app/*`, `components/*`
 - ViewModel: `hooks/use*ViewModel.ts` (예: `hooks/useAddRoutineViewModel.ts`)
-- Model/Data: `service/*`, `schema/*`, `interface/*`, `lib/supabase.ts`
+- Model/Data: `service/*`, `schema/*`, `interface/*`, `lib/database.ts`
 
-화면은 렌더링에 집중하고, 상태/액션/검증 로직은 훅으로 분리합니다. 데이터 접근은 `service/*`에서 Supabase로 처리합니다.
+화면은 렌더링에 집중하고, 상태/액션/검증 로직은 훅으로 분리합니다. 데이터 접근은 `service/*`에서 로컬 SQLite로 처리합니다.
 
 ## 유효성 검사 정책
 
