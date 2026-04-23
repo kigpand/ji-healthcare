@@ -3,7 +3,12 @@ import { ICategory } from "@/interface/category";
 import { getErrorMessage } from "@/utils/errorAlert";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export function useCategorySelection(initial?: ICategory | null) {
+type UseCategorySelectionOptions = {
+  initial?: ICategory | null;
+  autoSelectFirst?: boolean;
+};
+
+export function useCategorySelection(options?: UseCategorySelectionOptions) {
   const {
     data: categories,
     isLoading,
@@ -11,15 +16,16 @@ export function useCategorySelection(initial?: ICategory | null) {
     error,
   } = useCategory();
   const [selectedCategory, setSelectedCategory] = useState<ICategory | null>(
-    initial ?? null,
+    options?.initial ?? null
   );
+  const autoSelectFirst = options?.autoSelectFirst ?? true;
 
   const categoryList = useMemo(() => categories ?? [], [categories]);
   const errorMessage = useMemo(() => getErrorMessage(error), [error]);
 
   useEffect(() => {
     if (!selectedCategory) {
-      if (categoryList.length > 0) {
+      if (autoSelectFirst && categoryList.length > 0) {
         setSelectedCategory(categoryList[0]);
       }
       return;
@@ -30,17 +36,17 @@ export function useCategorySelection(initial?: ICategory | null) {
     );
 
     if (!hasSelectedCategory) {
-      setSelectedCategory(categoryList[0] ?? null);
+      setSelectedCategory(autoSelectFirst ? (categoryList[0] ?? null) : null);
     }
-  }, [categoryList, selectedCategory]);
+  }, [autoSelectFirst, categoryList, selectedCategory]);
 
-  const handleChangeCategory = useCallback((category: ICategory) => {
+  const handleChangeCategory = useCallback((category: ICategory | null) => {
     setSelectedCategory(category);
   }, []);
 
   const resetCategorySelection = useCallback(() => {
-    setSelectedCategory(categoryList[0] ?? null);
-  }, [categoryList]);
+    setSelectedCategory(autoSelectFirst ? (categoryList[0] ?? null) : null);
+  }, [autoSelectFirst, categoryList]);
 
   return {
     categories: categoryList,
