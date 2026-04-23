@@ -201,7 +201,20 @@ export function useRoutineRunner() {
       return;
     }
 
-    if (counts[currentRoutineIndex] >= currentExercise.set) {
+    const currentCount = counts[currentRoutineIndex] ?? 0;
+
+    if (currentCount >= currentExercise.set) {
+      return;
+    }
+
+    const isLastExercise = currentRoutineIndex === totalRoutines - 1;
+    const isFinalSet = currentCount + 1 >= currentExercise.set;
+
+    if (isLastExercise && isFinalSet) {
+      dispatch({
+        type: "INCREMENT_SET",
+        payload: { index: currentRoutineIndex, max: currentExercise.set },
+      });
       return;
     }
 
