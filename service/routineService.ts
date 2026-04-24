@@ -83,12 +83,20 @@ async function getRoutineRows(categoryId?: string) {
     ...(hasCategoryFilter ? [Number(categoryId)] : [])
   );
 
+  if (!routines.length) {
+    return [];
+  }
+
+  const routineIds = routines.map((routine) => routine.id);
+  const placeholders = routineIds.map(() => "?").join(", ");
   const items = await db.getAllAsync<RoutineItemRow>(
     `
       SELECT id, routine_id, title, kg, set_count, link, sort_order
       FROM routine_items
+      WHERE routine_id IN (${placeholders})
       ORDER BY routine_id ASC, sort_order ASC, id ASC
-    `
+    `,
+    ...routineIds
   );
 
   const itemsByRoutineId = new Map<number, RoutineItemRow[]>();
