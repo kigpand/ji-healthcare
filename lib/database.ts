@@ -1,17 +1,12 @@
 import * as SQLite from "expo-sqlite";
 
 const DATABASE_NAME = "ji-healthcare.db";
+const LATEST_SCHEMA_VERSION = 1;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-// 앱에서 사용할 로컬 SQLite 파일을 열고 필요한 테이블/인덱스를 생성합니다.
-async function createDatabase() {
-  const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
-
-  // PRAGMA: SQLite 동작 옵션 설정, 여기서는 외래 키 제약을 활성화합니다.
-  // CREATE TABLE IF NOT EXISTS: 테이블이 없을 때만 생성합니다.
-  // CREATE INDEX IF NOT EXISTS: 조회 성능을 위해 인덱스를 만들되, 이미 있으면 다시 만들지 않습니다.
-  await database.execAsync(`
+const migrations: Record<number, string> = {
+  1: `
     PRAGMA foreign_keys = ON;
 
     CREATE TABLE IF NOT EXISTS categories (
@@ -58,7 +53,58 @@ async function createDatabase() {
       ON records (recorded_at DESC);
     CREATE INDEX IF NOT EXISTS idx_records_category_id
       ON records (category_id);
-  `);
+  `,
+};
+
+async function getSchemaVersion(database: SQLite.SQLiteDatabase) {
+  const result = await database.getFirstAsync<{ user_version: number }>(
+    "PRAGMA user_version"
+  );
+
+  return result?.user_version ?? 0;
+}
+
+async function applyMigrations(database: SQLite.SQLiteDatabase) {
+  const currentVersion = await getSchemaVersion(database);
+
+  if (currentVersion > LATEST_SCHEMA_VERSION) {
+    throw new Error(
+      "앱이 지원하는 데이터베이스 버전보다 높은 스키마가 감지되었습니다."
+    );
+  }
+
+  for (
+    let nextVersion = currentVersion + 1;
+    nextVersion <= LATEST_SCHEMA_VERSION;
+    nextVersion += 1
+  ) {
+    const migration = migrations[nextVersion];
+
+    if (!migration) {
+      throw new Error(`데이터베이스 마이그레이션 v${nextVersion}이 없습니다.`);
+    }
+
+    await database.execAsync("BEGIN IMMEDIATE TRANSACTION");
+
+    try {
+      await database.execAsync(migration);
+      await database.execAsync(`PRAGMA user_version = ${nextVersion}`);
+      await database.execAsync("COMMIT");
+    } catch (error) {
+      await database.execAsync("ROLLBACK");
+      throw error;
+    }
+  }
+
+  await database.execAsync("PRAGMA foreign_keys = ON");
+}
+
+// 앱에서 사용할 로컬 SQLite 파일을 열고 필요한 마이그레이션을 적용합니다.
+async function createDatabase() {
+  const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
+
+  await database.execAsync("PRAGMA foreign_keys = ON");
+  await applyMigrations(database);
 
   return database;
 }
