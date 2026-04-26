@@ -1,27 +1,18 @@
-import { IRecord } from "@/interface/record";
+import type { IRecord } from "@/interface/record";
 import type { IRoutineInfo } from "@/interface/routine";
-import { supabase } from "@/lib/supabase";
-import { getStartOfDayIsoString } from "@/utils/date";
-
-type CategoryRelation = {
-  name: string;
-} | null;
+import { getDatabase } from "@/lib/database";
+import {
+  getCurrentUtcIsoString,
+  getStartOfLocalDayUtcIsoString,
+} from "@/utils/date";
 
 type RecordRow = {
   id: number;
   routine_id: number | null;
   title: string;
   recorded_at: string;
-  categories?: CategoryRelation | CategoryRelation[];
+  category_name: string | null;
 };
-
-function getCategoryName(categories?: CategoryRelation | CategoryRelation[]) {
-  if (Array.isArray(categories)) {
-    return categories[0]?.name ?? "";
-  }
-
-  return categories?.name ?? "";
-}
 
 function mapRecord(row: RecordRow): IRecord {
   return {
@@ -29,37 +20,55 @@ function mapRecord(row: RecordRow): IRecord {
     id: row.id,
     routineId: row.routine_id ?? 0,
     title: row.title,
-    category: getCategoryName(row.categories),
+    category: row.category_name ?? "",
     date: row.recorded_at,
   };
 }
 
 export async function getRecord(days?: number) {
-  let query = supabase
-    .from("records")
-    .select("id,routine_id,title,recorded_at,categories(name)")
-    .order("recorded_at", { ascending: false });
+  const db = await getDatabase();
 
-  if (typeof days === "number" && days > 0) {
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - (days - 1));
-    query = query.gte("recorded_at", getStartOfDayIsoString(fromDate));
-  }
+  const query = `
+    SELECT
+      records.id,
+      records.routine_id,
+      records.title,
+      records.recorded_at,
+      categories.name AS category_name
+    FROM records
+    LEFT JOIN categories ON categories.id = records.category_id
+    ${typeof days === "number" && days > 0 ? "WHERE records.recorded_at >= ?" : ""}
+    ORDER BY records.recorded_at DESC, records.id DESC
+  `;
 
-  const { data, error } = await query;
+  const params =
+    typeof days === "number" && days > 0
+      ? [getStartOfLocalDayUtcIsoString(getDateDaysAgo(days - 1))]
+      : [];
 
-  if (error) throw error;
-
-  return (data ?? []).map((row) => mapRecord(row as RecordRow));
+  const rows = await db.getAllAsync<RecordRow>(query, ...params);
+  return rows.map(mapRecord);
 }
 
 export async function addRecord(routine: IRoutineInfo) {
-  const { error } = await supabase.from("records").insert({
-    routine_id: routine.id,
-    title: routine.title,
-    category_id: routine.categoryId,
-  });
+  const db = await getDatabase();
 
-  if (error) throw error;
+  await db.runAsync(
+    `
+      INSERT INTO records (routine_id, title, category_id, recorded_at)
+      VALUES (?, ?, ?, ?)
+    `,
+    routine.id,
+    routine.title,
+    routine.categoryId,
+    getCurrentUtcIsoString()
+  );
+
   return true;
+}
+
+function getDateDaysAgo(days: number) {
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days);
+  return fromDate;
 }

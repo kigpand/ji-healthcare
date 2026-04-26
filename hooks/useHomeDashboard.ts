@@ -5,8 +5,8 @@ import type { IRecord } from "@/interface/record";
 import {
   formatRecordDate,
   getDayDifference,
-  getStartOfDayTimestamp,
-  parseDate,
+  getStartOfLocalDayTimestamp,
+  parseStoredUtcDate,
 } from "@/utils/date";
 import { useMemo } from "react";
 
@@ -28,53 +28,58 @@ export function useHomeDashboard() {
     isLoading: allRecordsLoading,
     isError: allRecordsError,
   } = useRecord();
-  const {
-    data: weeklyRecords,
-    isLoading: weeklyLoading,
-    isError: weeklyError,
-  } = useRecord(7);
-  const {
-    data: monthlyRecords,
-    isLoading: monthlyLoading,
-    isError: monthlyError,
-  } = useRecord(30);
 
-  const isLoading =
-    routineLoading ||
-    categoryLoading ||
-    allRecordsLoading ||
-    weeklyLoading ||
-    monthlyLoading;
-  const isError =
-    routineError ||
-    categoryError ||
-    allRecordsError ||
-    weeklyError ||
-    monthlyError;
+  const isLoading = routineLoading || categoryLoading || allRecordsLoading;
+  const isError = routineError || categoryError || allRecordsError;
 
   const dashboard = useMemo(() => {
     const routineCount = routines?.routines.length ?? 0;
     const categoryCount = categories?.length ?? 0;
-    const weeklyCount = weeklyRecords?.length ?? 0;
-    const recentRecords = (allRecords ?? []).slice(0, RECENT_RECORD_LIMIT);
     const recordSource = allRecords ?? [];
+    const weeklyRecords = getRecordsWithinDays(recordSource, 7);
+    const monthlyRecords = getRecordsWithinDays(recordSource, 30);
+    const recentRecords = recordSource.slice(0, RECENT_RECORD_LIMIT);
 
     return {
       routineCount,
       categoryCount,
-      weeklyCount,
+      weeklyCount: weeklyRecords.length,
       recentRecords,
       topCategory: getTopCategory(monthlyRecords ?? []),
       lastWorkoutDate: getLatestWorkoutDate(recordSource),
       currentStreak: getCurrentWorkoutStreak(recordSource),
     };
-  }, [allRecords, categories, monthlyRecords, routines, weeklyRecords]);
+  }, [allRecords, categories, routines]);
 
   return {
     isLoading,
     isError,
     dashboard,
   };
+}
+
+function getRecordsWithinDays(records: IRecord[], days: number) {
+  if (days <= 0) {
+    return [];
+  }
+
+  const startTimestamp = getStartOfLocalDayTimestamp(getDateDaysAgo(days - 1));
+
+  return records.filter((record) => {
+    const date = parseStoredUtcDate(record.date);
+
+    if (!date) {
+      return false;
+    }
+
+    return getStartOfLocalDayTimestamp(date) >= startTimestamp;
+  });
+}
+
+function getDateDaysAgo(days: number) {
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days);
+  return fromDate;
 }
 
 function getCurrentWorkoutStreak(records: IRecord[]) {
@@ -86,8 +91,8 @@ function getCurrentWorkoutStreak(records: IRecord[]) {
     new Set(
       records
         .map((record) => {
-          const date = parseDate(record.date);
-          return date ? getStartOfDayTimestamp(date) : null;
+          const date = parseStoredUtcDate(record.date);
+          return date ? getStartOfLocalDayTimestamp(date) : null;
         })
         .filter((value): value is number => value !== null)
     )
@@ -97,7 +102,7 @@ function getCurrentWorkoutStreak(records: IRecord[]) {
     return 0;
   }
 
-  const today = getStartOfDayTimestamp(new Date());
+  const today = getStartOfLocalDayTimestamp(new Date());
   const yesterday = today - 1000 * 60 * 60 * 24;
   const latestWorkoutDay = uniqueDates[0];
 
@@ -147,7 +152,7 @@ function getLatestWorkoutDate(records: IRecord[]) {
   }
 
   const latestDate = records.reduce<string | null>((latest, record) => {
-    const currentDate = parseDate(record.date);
+    const currentDate = parseStoredUtcDate(record.date);
 
     if (!currentDate) {
       return latest;
@@ -157,7 +162,7 @@ function getLatestWorkoutDate(records: IRecord[]) {
       return record.date;
     }
 
-    const latestDate = parseDate(latest);
+    const latestDate = parseStoredUtcDate(latest);
 
     if (!latestDate || currentDate.getTime() > latestDate.getTime()) {
       return record.date;

@@ -17,7 +17,10 @@ type Props = {
   isLoading: boolean;
   isError: boolean;
   errorMessage?: string;
-  onSelectCategory: (category: ICategory) => void;
+  onSelectCategory: (category: ICategory | null) => void;
+  placeholder?: string;
+  includeAllOption?: boolean;
+  allOptionLabel?: string;
 };
 
 export default function RoutineCategorySelect({
@@ -27,10 +30,13 @@ export default function RoutineCategorySelect({
   isError,
   errorMessage,
   onSelectCategory,
+  placeholder = "카테고리를 선택해주세요",
+  includeAllOption = false,
+  allOptionLabel = "전체",
 }: Props) {
   const [visible, setVisible] = useState(false);
 
-  const handleSelect = (category: ICategory) => {
+  const handleSelect = (category: ICategory | null) => {
     onSelectCategory(category);
     setVisible(false);
   };
@@ -47,7 +53,8 @@ export default function RoutineCategorySelect({
             ? "카테고리를 불러오는 중..."
             : isError
             ? errorMessage ?? "카테고리를 불러오지 못했습니다."
-            : selectedCategory?.name ?? "카테고리를 선택해주세요"}
+            : selectedCategory?.name ??
+              (includeAllOption ? allOptionLabel : placeholder)}
         </Text>
         <MaterialIcons name="expand-more" size={20} color="#6b7280" />
       </Pressable>
@@ -70,10 +77,13 @@ export default function RoutineCategorySelect({
             ) : (
               <FlatList
                 style={styles.categoryList}
-                data={categories}
-                keyExtractor={(item) => item.id}
+                data={includeAllOption ? [null, ...categories] : categories}
+                keyExtractor={(item) => item?.id ?? "all"}
                 renderItem={({ item }) => {
-                  const selected = item.id === selectedCategory?.id;
+                  const selected = item
+                    ? item.id === selectedCategory?.id
+                    : selectedCategory === null;
+
                   return (
                     <Pressable
                       style={[
@@ -88,7 +98,7 @@ export default function RoutineCategorySelect({
                           selected && styles.categoryItemTextSelected,
                         ]}
                       >
-                        {item.name}
+                        {item?.name ?? allOptionLabel}
                       </Text>
                     </Pressable>
                   );

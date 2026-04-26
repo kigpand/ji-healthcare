@@ -12,7 +12,7 @@ export default function Routine() {
     errorMessage,
     selectedCategory,
     handleChangeCategory,
-  } = useCategorySelection();
+  } = useCategorySelection({ autoSelectFirst: false });
 
   return (
     <View style={styles.container}>
@@ -25,6 +25,8 @@ export default function Routine() {
           isError={isError}
           errorMessage={errorMessage}
           selectedCategory={selectedCategory}
+          includeAllOption
+          allOptionLabel="전체 루틴"
           onSelectCategory={handleChangeCategory}
         />
       </View>
