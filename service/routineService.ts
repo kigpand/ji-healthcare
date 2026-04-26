@@ -5,6 +5,7 @@ import type {
 } from "@/interface/routine";
 import { getDatabase, runInTransaction } from "@/lib/database";
 import { validateRoutineRequestInput } from "@/schema/routine.schema";
+import { getCurrentUtcIsoString } from "@/utils/date";
 
 type RoutineRow = {
   id: number;
@@ -165,7 +166,7 @@ export async function addRoutine(routine: IRoutineRequest) {
       `,
       validated.data.title,
       validated.data.categoryId,
-      new Date().toISOString()
+      getCurrentUtcIsoString()
     );
 
     const routineId = insertedRoutine.lastInsertRowId;

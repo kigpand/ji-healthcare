@@ -1,7 +1,10 @@
 import type { IRecord } from "@/interface/record";
 import type { IRoutineInfo } from "@/interface/routine";
 import { getDatabase } from "@/lib/database";
-import { getStartOfDayIsoString } from "@/utils/date";
+import {
+  getCurrentUtcIsoString,
+  getStartOfLocalDayUtcIsoString,
+} from "@/utils/date";
 
 type RecordRow = {
   id: number;
@@ -40,7 +43,7 @@ export async function getRecord(days?: number) {
 
   const params =
     typeof days === "number" && days > 0
-      ? [getStartOfDayIsoString(getDateDaysAgo(days - 1))]
+      ? [getStartOfLocalDayUtcIsoString(getDateDaysAgo(days - 1))]
       : [];
 
   const rows = await db.getAllAsync<RecordRow>(query, ...params);
@@ -58,7 +61,7 @@ export async function addRecord(routine: IRoutineInfo) {
     routine.id,
     routine.title,
     routine.categoryId,
-    new Date().toISOString()
+    getCurrentUtcIsoString()
   );
 
   return true;

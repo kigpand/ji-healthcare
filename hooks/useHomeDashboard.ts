@@ -5,8 +5,8 @@ import type { IRecord } from "@/interface/record";
 import {
   formatRecordDate,
   getDayDifference,
-  getStartOfDayTimestamp,
-  parseDate,
+  getStartOfLocalDayTimestamp,
+  parseStoredUtcDate,
 } from "@/utils/date";
 import { useMemo } from "react";
 
@@ -63,16 +63,16 @@ function getRecordsWithinDays(records: IRecord[], days: number) {
     return [];
   }
 
-  const startTimestamp = getStartOfDayTimestamp(getDateDaysAgo(days - 1));
+  const startTimestamp = getStartOfLocalDayTimestamp(getDateDaysAgo(days - 1));
 
   return records.filter((record) => {
-    const date = parseDate(record.date);
+    const date = parseStoredUtcDate(record.date);
 
     if (!date) {
       return false;
     }
 
-    return getStartOfDayTimestamp(date) >= startTimestamp;
+    return getStartOfLocalDayTimestamp(date) >= startTimestamp;
   });
 }
 
@@ -91,8 +91,8 @@ function getCurrentWorkoutStreak(records: IRecord[]) {
     new Set(
       records
         .map((record) => {
-          const date = parseDate(record.date);
-          return date ? getStartOfDayTimestamp(date) : null;
+          const date = parseStoredUtcDate(record.date);
+          return date ? getStartOfLocalDayTimestamp(date) : null;
         })
         .filter((value): value is number => value !== null)
     )
@@ -102,7 +102,7 @@ function getCurrentWorkoutStreak(records: IRecord[]) {
     return 0;
   }
 
-  const today = getStartOfDayTimestamp(new Date());
+  const today = getStartOfLocalDayTimestamp(new Date());
   const yesterday = today - 1000 * 60 * 60 * 24;
   const latestWorkoutDay = uniqueDates[0];
 
@@ -152,7 +152,7 @@ function getLatestWorkoutDate(records: IRecord[]) {
   }
 
   const latestDate = records.reduce<string | null>((latest, record) => {
-    const currentDate = parseDate(record.date);
+    const currentDate = parseStoredUtcDate(record.date);
 
     if (!currentDate) {
       return latest;
@@ -162,7 +162,7 @@ function getLatestWorkoutDate(records: IRecord[]) {
       return record.date;
     }
 
-    const latestDate = parseDate(latest);
+    const latestDate = parseStoredUtcDate(latest);
 
     if (!latestDate || currentDate.getTime() > latestDate.getTime()) {
       return record.date;

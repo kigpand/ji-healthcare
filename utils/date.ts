@@ -1,6 +1,7 @@
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
-export function parseDate(value: string) {
+// DB에는 UTC ISO 문자열을 저장하고, 조회 후에는 로컬 Date로 해석합니다.
+export function parseStoredUtcDate(value: string) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -10,7 +11,8 @@ export function parseDate(value: string) {
   return date;
 }
 
-export function getStartOfDayTimestamp(date: Date) {
+// 일간 집계 기준은 기기 로컬 시간대의 자정입니다.
+export function getStartOfLocalDayTimestamp(date: Date) {
   return new Date(
     date.getFullYear(),
     date.getMonth(),
@@ -18,7 +20,8 @@ export function getStartOfDayTimestamp(date: Date) {
   ).getTime();
 }
 
-export function getStartOfDayIsoString(date: Date) {
+// 로컬 자정을 UTC ISO 문자열로 바꿔 SQLite의 UTC 저장값과 비교합니다.
+export function getStartOfLocalDayUtcIsoString(date: Date) {
   return new Date(
     date.getFullYear(),
     date.getMonth(),
@@ -26,8 +29,12 @@ export function getStartOfDayIsoString(date: Date) {
   ).toISOString();
 }
 
+export function getCurrentUtcIsoString() {
+  return new Date().toISOString();
+}
+
 export function formatRecordDate(value: string) {
-  const date = parseDate(value);
+  const date = parseStoredUtcDate(value);
 
   if (!date) {
     return value;
