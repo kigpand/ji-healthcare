@@ -1,4 +1,5 @@
 import * as SQLite from "expo-sqlite";
+import { Platform } from "react-native";
 
 const DATABASE_NAME = "ji-healthcare.db";
 const LATEST_SCHEMA_VERSION = 1;
@@ -64,6 +65,32 @@ async function getSchemaVersion(database: SQLite.SQLiteDatabase) {
   return result?.user_version ?? 0;
 }
 
+async function executeTransaction<T>(
+  database: SQLite.SQLiteDatabase,
+  operation: (transaction: SQLite.SQLiteDatabase) => Promise<T>
+) {
+  if (Platform.OS === "web") {
+    await database.execAsync("BEGIN IMMEDIATE TRANSACTION");
+
+    try {
+      const result = await operation(database);
+      await database.execAsync("COMMIT");
+      return result;
+    } catch (error) {
+      await database.execAsync("ROLLBACK");
+      throw error;
+    }
+  }
+
+  let result: T | undefined;
+
+  await database.withExclusiveTransactionAsync(async (transaction) => {
+    result = await operation(transaction);
+  });
+
+  return result as T;
+}
+
 async function applyMigrations(database: SQLite.SQLiteDatabase) {
   const currentVersion = await getSchemaVersion(database);
 
@@ -84,16 +111,10 @@ async function applyMigrations(database: SQLite.SQLiteDatabase) {
       throw new Error(`데이터베이스 마이그레이션 v${nextVersion}이 없습니다.`);
     }
 
-    await database.execAsync("BEGIN IMMEDIATE TRANSACTION");
-
-    try {
-      await database.execAsync(migration);
-      await database.execAsync(`PRAGMA user_version = ${nextVersion}`);
-      await database.execAsync("COMMIT");
-    } catch (error) {
-      await database.execAsync("ROLLBACK");
-      throw error;
-    }
+    await executeTransaction(database, async (transaction) => {
+      await transaction.execAsync(migration);
+      await transaction.execAsync(`PRAGMA user_version = ${nextVersion}`);
+    });
   }
 
   await database.execAsync("PRAGMA foreign_keys = ON");
@@ -129,17 +150,5 @@ export async function runInTransaction<T>(
 ) {
   const database = await getDatabase();
 
-  // BEGIN IMMEDIATE TRANSACTION: 쓰기 트랜잭션을 시작하고 이후 작업을 하나의 묶음으로 처리합니다.
-  await database.execAsync("BEGIN IMMEDIATE TRANSACTION");
-
-  try {
-    const result = await operation(database);
-    // COMMIT: 트랜잭션 안의 작업이 모두 성공했을 때 변경사항을 최종 저장합니다.
-    await database.execAsync("COMMIT");
-    return result;
-  } catch (error) {
-    // ROLLBACK: 중간에 실패가 발생하면 지금까지의 변경사항을 모두 취소합니다.
-    await database.execAsync("ROLLBACK");
-    throw error;
-  }
+  return executeTransaction(database, operation);
 }
