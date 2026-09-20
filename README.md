@@ -27,7 +27,7 @@ Expo + React Native 기반의 운동 루틴/기록 앱입니다.
 
 ### 1) 요구사항
 
-- Node.js 18+
+- Node.js 22.17.0 (`.nvmrc` 기준)
 
 ### 2) 설치
 
@@ -86,6 +86,20 @@ interface/           # 타입 정의
 utils/               # 공통 유틸
 constants/           # 상수
 ```
+
+## 에이전트 작업 및 검증
+
+공통 규칙은 [AGENTS.md](./AGENTS.md), 개발·리뷰·테스트·배포 절차는
+[하네스 가이드](./docs/harness/README.md)를 참고하세요.
+
+```bash
+npm run check       # 린트, 타입 검사, 단위 테스트
+npm run test:ci     # 커버리지 포함 테스트
+npm run build:check # Android/iOS JS 번들 검사
+```
+
+GitHub CI는 push/PR마다 검증합니다. EAS 빌드는 수동 실행하며,
+환경별 EXPO_TOKEN·서명 자격 증명 설정은 배포 가이드에 설명되어 있습니다.
 
 ## 아키텍처 가이드
 
