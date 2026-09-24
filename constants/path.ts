@@ -1,5 +1,6 @@
 export const PATH = {
   home: "/",
+  coach: "/coach",
   routine: "/(tabs)/routine",
   category: "/(tabs)/category",
   record: "/(tabs)/record",

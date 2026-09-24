@@ -195,6 +195,11 @@ export default function HomeScreen() {
 
       <View style={styles.grid}>
         <HomeButton
+          title="AI 운동 코치 · 미리보기"
+          subtitle="내 운동 설정과 이번 주 기록으로 추천 흐름 확인"
+          onPress={() => router.navigate(PATH.coach)}
+        />
+        <HomeButton
           title="운동 루틴"
           subtitle="카테고리별 루틴을 확인하세요"
           onPress={() => router.navigate(PATH.routine)}
