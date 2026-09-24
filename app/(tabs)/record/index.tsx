@@ -5,8 +5,8 @@ import RecordChart from "@/components/record/RecordChart";
 import { RANGE_OPTIONS } from "@/constants/dateOption";
 import { useRecord } from "@/hooks/queries/useRecord";
 import { IRecord } from "@/interface/record";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -17,18 +17,13 @@ import {
 
 export default function Record() {
   const { range } = useLocalSearchParams<{ range?: string }>();
-  const [selectedRange, setSelectedRange] = useState<number>(() =>
-    getValidRange(range)
-  );
+  const router = useRouter();
+  const selectedRange = getValidRange(range);
   const [selectedRecord, setSelectedRecord] = useState<IRecord | null>(null);
   const { data: record, isLoading, isError } = useRecord(selectedRange);
   const recordList = useMemo(() => {
     return record ?? [];
   }, [record]);
-
-  useEffect(() => {
-    setSelectedRange(getValidRange(range));
-  }, [range]);
 
   return (
     <View style={styles.container}>
@@ -36,7 +31,9 @@ export default function Record() {
       <Text style={styles.title}>최근 운동 기록</Text>
       <DateButton
         selectedRange={selectedRange}
-        handleChangeSelectedRange={setSelectedRange}
+        handleChangeSelectedRange={(nextRange) => {
+          router.setParams({ range: nextRange.toString() });
+        }}
       />
       {isLoading ? (
         <ActivityIndicator />

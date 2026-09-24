@@ -27,9 +27,17 @@ export default function HomeScreen() {
   const [isReminderLoading, setIsReminderLoading] = useState(true);
 
   useEffect(() => {
-    loadReminderState().catch((error) => {
-      console.error("Failed to load reminder state", error);
-    });
+    hasScheduledWorkoutReminder()
+      .then((enabled) => {
+        setIsReminderEnabled(enabled);
+      })
+      .catch((error) => {
+        console.error("Failed to read scheduled workout reminders", error);
+        setIsReminderEnabled(false);
+      })
+      .finally(() => {
+        setIsReminderLoading(false);
+      });
   }, []);
 
   function handleOpenRecord(range?: number) {
@@ -42,18 +50,6 @@ export default function HomeScreen() {
       pathname: PATH.record,
       params: { range: range.toString() },
     });
-  }
-
-  async function loadReminderState() {
-    try {
-      const enabled = await hasScheduledWorkoutReminder();
-      setIsReminderEnabled(enabled);
-    } catch (error) {
-      console.error("Failed to read scheduled workout reminders", error);
-      setIsReminderEnabled(false);
-    } finally {
-      setIsReminderLoading(false);
-    }
   }
 
   async function handleToggleReminder() {

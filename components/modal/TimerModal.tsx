@@ -1,5 +1,5 @@
 import ModalContainer from "@/components/modal/ModalContainer";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   Pressable,
@@ -22,13 +22,26 @@ export default function TimerModal({
   handleConfirmRestTime,
   onClose,
 }: Props) {
-  const [time, setTime] = useState<string>(initialValue.toString());
+  if (!modalVisible) {
+    return null;
+  }
 
-  useEffect(() => {
-    if (modalVisible) {
-      setTime(initialValue.toString());
-    }
-  }, [modalVisible, initialValue]);
+  return (
+    <VisibleTimerModal
+      key={initialValue}
+      initialValue={initialValue}
+      handleConfirmRestTime={handleConfirmRestTime}
+      onClose={onClose}
+    />
+  );
+}
+
+function VisibleTimerModal({
+  initialValue,
+  handleConfirmRestTime,
+  onClose,
+}: Omit<Props, "modalVisible">) {
+  const [time, setTime] = useState<string>(initialValue.toString());
 
   function handlePressButton() {
     const timer = parseInt(time, 10);
@@ -45,7 +58,7 @@ export default function TimerModal({
 
   return (
     <ModalContainer
-      visible={modalVisible}
+      visible
       onClose={onClose}
       title="휴식 시간을 설정하세요"
       footer={
