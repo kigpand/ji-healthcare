@@ -8,7 +8,7 @@ import {
 } from "@/hooks/useRoutineForm";
 import { validateRoutineRequestInput } from "@/schema/routine.schema";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Alert } from "react-native";
 
 export function useEditRoutineViewModel() {
@@ -29,6 +29,7 @@ export function useEditRoutineViewModel() {
   } = useCategorySelection();
   const { state: formState, dispatch } = useRoutineForm();
   const { title, sets } = formState;
+  const initializedCategoryRoutineId = useRef<number | null>(null);
 
   useEffect(() => {
     if (!routineDetail) {
@@ -42,7 +43,11 @@ export function useEditRoutineViewModel() {
   }, [dispatch, routineDetail]);
 
   useEffect(() => {
-    if (!routineDetail || !categories.length) {
+    if (
+      !routineDetail ||
+      !categories.length ||
+      initializedCategoryRoutineId.current === routineDetail.id
+    ) {
       return;
     }
 
@@ -50,8 +55,12 @@ export function useEditRoutineViewModel() {
       (category) => Number(category.id) === routineDetail.categoryId
     );
 
-    if (matchedCategory && matchedCategory.id !== selectedCategory?.id) {
-      handleChangeCategory(matchedCategory);
+    if (matchedCategory) {
+      initializedCategoryRoutineId.current = routineDetail.id;
+
+      if (matchedCategory.id !== selectedCategory?.id) {
+        handleChangeCategory(matchedCategory);
+      }
     }
   }, [categories, handleChangeCategory, routineDetail, selectedCategory?.id]);
 
