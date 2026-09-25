@@ -53,12 +53,10 @@ npm run start -- --dev-client
 ## 배포
 
 ```bash
-npx wrangler secret put OPENAI_API_KEY --config worker/wrangler.jsonc
-npx wrangler secret put APP_ACCESS_TOKEN --config worker/wrangler.jsonc
-npm run worker:deploy
+npx wrangler deploy --config worker/wrangler.jsonc --secrets-file worker/.dev.vars
 ```
 
-배포가 끝나면 `.env`의 `EXPO_PUBLIC_AI_COACH_URL`을 출력된 `workers.dev` 주소로 바꾸고 앱을 다시 빌드한다.
+`worker/.dev.vars`의 두 값을 배포 비밀값으로 업로드한다. 파일은 Git에서 제외되며 값을 터미널에 출력하지 않는다. 배포가 끝나면 `.env`의 `EXPO_PUBLIC_AI_COACH_URL`을 출력된 `workers.dev` 주소로 바꾸고 앱을 다시 실행한다.
 
 ## 기기 검증 시나리오
 

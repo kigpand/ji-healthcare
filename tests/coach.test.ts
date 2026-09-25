@@ -37,3 +37,44 @@ test('변경한 설정, 실제 루틴과 기록 한계를 추천 요청에 포�
   expect(request.summary).toEqual({ workoutCount: 0, workoutDays: 0 });
   expect(request.limitations.length).toBeGreaterThan(0);
 });
+
+test('삭제된 루틴의 과거 기록은 nullable 루틴 ID로 보존한다', () => {
+  const deletedRoutineRecord = { ...record('2026-09-24T03:00:00Z'), routineId: 0 };
+  const request = buildCoachRequest(
+    profile,
+    [deletedRoutineRecord],
+    [],
+    [],
+    new Date('2026-09-25T03:00:00Z')
+  );
+
+  expect(request.records[0].routineId).toBeNull();
+});
+
+test('AI 요청 크기 제한을 넘는 데이터는 일부만 포함하고 제외 사실을 알린다', () => {
+  const routines = Array.from({ length: 101 }, (_, index) => ({
+    ...routine,
+    id: index + 1,
+  }));
+  const records = Array.from({ length: 101 }, (_, index) =>
+    record('2026-09-24T03:00:00Z', index + 1)
+  );
+  const request = buildCoachRequest(
+    profile,
+    records,
+    routines,
+    [],
+    new Date('2026-09-25T03:00:00Z')
+  );
+
+  expect(request.records).toHaveLength(100);
+  expect(request.routines).toHaveLength(100);
+  expect(request.routines[0].id).toBe(2);
+  expect(request.summary.workoutCount).toBe(101);
+  expect(request.limitations).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('이번 주 기록 중 최근 100개'),
+      expect.stringContaining('등록 루틴 중 최근 100개'),
+    ])
+  );
+});

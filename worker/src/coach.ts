@@ -2,11 +2,9 @@ import type {
   CoachApiRecommendation,
   CoachRequest,
 } from "../../interface/coach";
+import { COACH_REQUEST_LIMITS } from "../../interface/coach";
 
-const MAX_ROUTINES = 100;
 const MAX_ROUTINE_ITEMS = 30;
-const MAX_RECORDS = 100;
-const MAX_CATEGORIES = 100;
 
 export const recommendationSchema = {
   type: "object",
@@ -68,7 +66,11 @@ export function sanitizeCoachRequest(value: unknown): CoachRequest {
   const goal = requireEnum(profile.goal, ["근육 증가", "체중 감량", "체력 유지"], "운동 목표");
   const environment = requireEnum(profile.environment, ["헬스장", "홈트", "야외"], "운동 장소");
   const minutes = requireInteger(profile.minutes, 5, 180, "운동 시간");
-  const equipment = requireString(profile.equipment, 200, "운동 장비");
+  const equipment = requireString(
+    profile.equipment,
+    COACH_REQUEST_LIMITS.equipmentLength,
+    "운동 장비"
+  );
   const start = requireDateTime(period.start, "시작 시간");
   const end = requireDateTime(period.end, "종료 시간");
   const timeZone = requireString(period.timeZone, 100, "시간대");
@@ -77,7 +79,7 @@ export function sanitizeCoachRequest(value: unknown): CoachRequest {
     throw new Error("분석 기간이 올바르지 않습니다.");
   }
 
-  const routines = requireArray(input.routines, MAX_ROUTINES, "루틴").map((value) => {
+  const routines = requireArray(input.routines, COACH_REQUEST_LIMITS.routines, "루틴").map((value) => {
     const routine = requireObject(value, "루틴");
     return {
       id: requireInteger(routine.id, 1, Number.MAX_SAFE_INTEGER, "루틴 ID"),
@@ -94,19 +96,22 @@ export function sanitizeCoachRequest(value: unknown): CoachRequest {
     };
   });
 
-  const records = requireArray(input.records, MAX_RECORDS, "운동 기록").map((value) => {
+  const records = requireArray(input.records, COACH_REQUEST_LIMITS.records, "운동 기록").map((value) => {
     const record = requireObject(value, "운동 기록");
     return {
       id: requireInteger(record.id, 1, Number.MAX_SAFE_INTEGER, "기록 ID"),
       _id: requireString(record._id, 100, "기록 식별자"),
-      routineId: requireInteger(record.routineId, 1, Number.MAX_SAFE_INTEGER, "기록 루틴 ID"),
+      routineId:
+        record.routineId === null
+          ? null
+          : requireInteger(record.routineId, 1, Number.MAX_SAFE_INTEGER, "기록 루틴 ID"),
       title: requireString(record.title, 80, "기록 이름"),
       category: requireString(record.category, 80, "기록 카테고리"),
       date: requireDateTime(record.date, "운동 기록일"),
     };
   });
 
-  const categories = requireArray(input.categories, MAX_CATEGORIES, "카테고리").map((value) => {
+  const categories = requireArray(input.categories, COACH_REQUEST_LIMITS.categories, "카테고리").map((value) => {
     const category = requireObject(value, "카테고리");
     return {
       id: requireString(category.id, 100, "카테고리 ID"),
@@ -125,7 +130,12 @@ export function sanitizeCoachRequest(value: unknown): CoachRequest {
     routines,
     categories,
     summary: {
-      workoutCount: requireInteger(summary.workoutCount, 0, MAX_RECORDS, "운동 횟수"),
+      workoutCount: requireInteger(
+        summary.workoutCount,
+        0,
+        Number.MAX_SAFE_INTEGER,
+        "운동 횟수"
+      ),
       workoutDays: requireInteger(summary.workoutDays, 0, 7, "운동 일수"),
     },
     limitations,

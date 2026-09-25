@@ -40,6 +40,32 @@ test("Worker 입력은 허용한 운동 데이터만 정규화한다", () => {
   expect(sanitizeCoachRequest({ ...request, ignored: "remove-me" })).toEqual(request);
 });
 
+test("Worker는 앱이 저장할 수 있는 장비 설명과 삭제된 루틴 기록을 허용한다", () => {
+  const accepted = {
+    ...request,
+    profile: { ...request.profile, equipment: "장".repeat(300) },
+    records: [
+      {
+        id: 1,
+        _id: "1",
+        routineId: null,
+        title: "삭제된 루틴 기록",
+        category: "전신",
+        date: "2026-09-24T00:00:00.000Z",
+      },
+    ],
+    summary: { workoutCount: 101, workoutDays: 1 },
+  };
+
+  expect(sanitizeCoachRequest(accepted)).toEqual(accepted);
+  expect(() =>
+    sanitizeCoachRequest({
+      ...accepted,
+      profile: { ...accepted.profile, equipment: "장".repeat(301) },
+    })
+  ).toThrow("운동 장비");
+});
+
 test("Worker는 입력에 실제 존재하는 기존 루틴만 허용한다", () => {
   expect(
     validateModelRecommendation(
