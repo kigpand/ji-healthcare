@@ -14,7 +14,9 @@
     "test:watch": "TZ=Asia/Seoul jest --watch",
     "test:ci": "TZ=Asia/Seoul jest --ci --runInBand --coverage",
     "check": "npm run lint && npm run typecheck && npm test",
-    "build:check": "expo export --platform android --platform ios"
+    "build:check": "expo export --platform android --platform ios",
+    "worker:dev": "wrangler dev --config worker/wrangler.jsonc",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.jsonc"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -49,13 +51,15 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260925.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~57.0.2",
     "jest": "^29.7.0",
     "jest-expo": "~57.0.5",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "wrangler": "^4.140.0"
   },
   "private": true
 }

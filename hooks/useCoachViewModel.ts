@@ -4,7 +4,7 @@ import { createRoutineFormState, useRoutineForm } from "@/hooks/useRoutineForm";
 import type { CoachResult } from "@/interface/coach";
 import { validateRoutineRequestInput } from "@/schema/routine.schema";
 import { getCategory } from "@/service/categoryService";
-import { getMockCoachRecommendation } from "@/service/coachService";
+import { getCoachRecommendation } from "@/service/coachService";
 import { getRecord } from "@/service/recordService";
 import { getRoutine } from "@/service/routineService";
 import { getWorkoutProfile, saveWorkoutProfile } from "@/service/workoutProfileService";
@@ -43,7 +43,7 @@ export function useCoachViewModel() {
     },
   });
 
-  async function analyze(scenario: "existing" | "new" | "rest") {
+  async function analyze() {
     if (lock.current || !profile.data) return;
     lock.current = true;
     setBusy(true);
@@ -51,8 +51,8 @@ export function useCoachViewModel() {
     try {
       // 자정 경계와 루틴 편집을 반영하도록 요청할 때마다 현재 데이터를 조회한다.
       const [records, routines, categoryList] = await Promise.all([getRecord(), getRoutine(), getCategory()]);
-      const response = getMockCoachRecommendation(
-        buildCoachRequest(profile.data, records, routines.routines, categoryList), scenario
+      const response = await getCoachRecommendation(
+        buildCoachRequest(profile.data, records, routines.routines, categoryList)
       );
       setResult(response);
       setCategoryId(null);

@@ -1,7 +1,6 @@
 import type { WorkoutProfile } from '@/interface/coach';
 import type { IRecord } from '@/interface/record';
 import type { IRoutineInfo } from '@/interface/routine';
-import { getMockCoachRecommendation } from '@/service/coachService';
 import { buildCoachRequest } from '@/utils/coach';
 
 const profile: WorkoutProfile = { goal: '체력 유지', environment: '홈트', minutes: 30, equipment: '없음' };
@@ -37,19 +36,4 @@ test('변경한 설정, 실제 루틴과 기록 한계를 추천 요청에 포�
   expect(request.routines).toEqual([routine]);
   expect(request.summary).toEqual({ workoutCount: 0, workoutDays: 0 });
   expect(request.limitations.length).toBeGreaterThan(0);
-});
-
-test('기존 추천은 저장된 루틴을 사용하며 없는 루틴을 생성하지 않는다', () => {
-  const request = buildCoachRequest(profile, [], [routine], []);
-  expect(getMockCoachRecommendation(request, 'existing').recommendation).toMatchObject({ kind: 'existing', routine });
-  expect(() => getMockCoachRecommendation({ ...request, routines: [] }, 'existing')).toThrow('기존 루틴이 없습니다');
-});
-
-test('새 루틴과 휴식을 구분하고 모든 모의 응답을 명시한다', () => {
-  const request = buildCoachRequest(profile, [], [], []);
-  const generated = getMockCoachRecommendation(request, 'new');
-  expect(generated.source).toBe('mock');
-  expect(generated.recommendation).toMatchObject({ kind: 'new', draft: { routine: [ { title: expect.any(String), set: 2, kg: 0 } ] } });
-  expect(getMockCoachRecommendation(request, 'rest').recommendation.kind).toBe('rest');
-  expect(request.routines).toEqual([]); // 미리보기만으로 목록에 등록하지 않는다.
 });

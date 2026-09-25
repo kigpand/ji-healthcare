@@ -28,19 +28,17 @@ export default function CoachScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>이번 주 분석 · 오늘의 운동</Text>
-      <Text style={styles.notice}>모의 응답 미리보기 · 아직 AI에 연결되지 않았습니다. 외부로 데이터를 전송하지 않습니다.</Text>
+      <Text style={styles.notice}>저장한 운동 설정과 이번 주 기록을 AI 코치가 분석합니다. 통증이나 회복 상태는 포함되지 않으므로 결과를 확인한 뒤 운동 여부를 결정해주세요.</Text>
       <WorkoutProfileForm initial={vm.profile.data ?? null} disabled={disabled}
         onChange={() => { setDirty(true); vm.clearResult(); }}
         onSave={async (profile) => { await vm.saveProfile.mutateAsync(profile); setDirty(false); }} />
       <View style={styles.card}>
-        <Text style={styles.heading}>추천 흐름 미리보기</Text>
-        <Text style={styles.text}>월요일부터 현재까지의 기록을 사용합니다. 실제 연결 후에는 AI가 기존 루틴을 우선 검토하고, 적합하지 않으면 새 루틴 또는 휴식을 제안합니다.</Text>
-        {(!vm.profile.data || dirty) && <Text style={styles.notice}>운동 설정을 저장한 뒤 미리보기를 실행해주세요.</Text>}
-        {([['existing', '기존 루틴 예시'], ['new', '새 루틴 예시'], ['rest', '휴식 예시']] as const).map(([scenario, label]) => (
-          <Pressable key={scenario} accessibilityRole="button" disabled={disabled || dirty || !vm.profile.data}
+        <Text style={styles.heading}>오늘의 운동 추천</Text>
+        <Text style={styles.text}>월요일부터 현재까지의 기록을 사용합니다. AI는 기존 루틴을 먼저 검토하고, 적합하지 않으면 새 루틴 또는 휴식을 제안합니다.</Text>
+        {(!vm.profile.data || dirty) && <Text style={styles.notice}>운동 설정을 저장한 뒤 추천을 요청해주세요.</Text>}
+        <Pressable accessibilityRole="button" disabled={disabled || dirty || !vm.profile.data}
             style={[styles.button, (disabled || dirty || !vm.profile.data) && styles.disabled]}
-            onPress={() => vm.analyze(scenario)}><Text style={styles.buttonText}>{label}</Text></Pressable>
-        ))}
+            onPress={vm.analyze}><Text style={styles.buttonText}>이번 주 분석하고 추천받기</Text></Pressable>
         {vm.busy && <ActivityIndicator />}
       </View>
       {vm.error && <Text style={styles.error}>{vm.error}</Text>}
@@ -66,7 +64,7 @@ export default function CoachScreen() {
       {recommendation?.kind === "new" && (
         <View style={styles.card}>
           <Text style={styles.heading}>새 루틴 확인·수정</Text>
-          <Text style={styles.text}>등록하면 실제 루틴 목록에 저장됩니다. 예시 내용을 원하는 운동으로 수정해주세요.</Text>
+          <Text style={styles.text}>등록하면 실제 루틴 목록에 저장됩니다. 추천 내용을 확인하고 원하는 운동으로 수정해주세요.</Text>
           {vm.registered ? <Text accessibilityRole="alert">루틴이 등록되었습니다. 운동 루틴 목록에서 확인할 수 있습니다.</Text> : (
             <View pointerEvents={disabled ? "none" : "auto"} style={disabled ? styles.disabled : undefined}>
               <Text style={styles.label}>루틴 이름</Text>

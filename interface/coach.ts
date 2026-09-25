@@ -27,8 +27,13 @@ export type CoachRecommendation =
   | { kind: "new"; draft: Omit<IRoutineRequest, "categoryId">; reason: string }
   | { kind: "rest"; reason: string };
 
+export type CoachApiRecommendation =
+  | { kind: "existing"; routineId: number; reason: string }
+  | { kind: "new"; draft: Omit<IRoutineRequest, "categoryId">; reason: string }
+  | { kind: "rest"; reason: string };
+
 export type CoachResult = {
-  source: "mock";
+  source: "openai";
   request: CoachRequest;
   recommendation: CoachRecommendation;
 };
