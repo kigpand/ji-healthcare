@@ -6,6 +6,7 @@ import {
 } from "@/service/notificationService";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { AppState } from "react-native";
 
 type RoutineRunnerState = {
   currentRoutineIndex: number;
@@ -13,6 +14,7 @@ type RoutineRunnerState = {
   isTimerModal: boolean;
   countdown: number;
   isTimerRunning: boolean;
+  timerEndsAt: number | null;
   finished: boolean;
   recordAdded: boolean;
   recordSaving: boolean;
@@ -21,10 +23,9 @@ type RoutineRunnerState = {
 
 type RoutineRunnerAction =
   | { type: "RESET"; payload: { countdown: number; counts: number[] } }
-  | { type: "OPEN_TIMER"; payload: { countdown: number } }
+  | { type: "OPEN_TIMER"; payload: { countdown: number; endsAt: number } }
   | { type: "CLOSE_TIMER"; payload: { countdown: number } }
-  | { type: "TICK" }
-  | { type: "SET_RUNNING"; payload: boolean }
+  | { type: "SYNC_TIMER"; payload: number }
   | { type: "INCREMENT_SET"; payload: { index: number; max: number } }
   | { type: "MOVE_NEXT_ROUTINE" }
   | { type: "FINISH" }
@@ -41,6 +42,7 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         isTimerModal: false,
         countdown: action.payload.countdown,
         isTimerRunning: false,
+        timerEndsAt: null,
         finished: false,
         recordAdded: false,
         recordSaving: false,
@@ -52,23 +54,21 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         isTimerModal: true,
         isTimerRunning: true,
         countdown: action.payload.countdown,
+        timerEndsAt: action.payload.endsAt,
       };
     case "CLOSE_TIMER":
       return {
         ...state,
         isTimerModal: false,
         isTimerRunning: false,
+        timerEndsAt: null,
         countdown: action.payload.countdown,
       };
-    case "TICK":
+    case "SYNC_TIMER":
       return {
         ...state,
-        countdown: state.countdown > 0 ? state.countdown - 1 : 0,
-      };
-    case "SET_RUNNING":
-      return {
-        ...state,
-        isTimerRunning: action.payload,
+        countdown: action.payload,
+        isTimerRunning: action.payload > 0,
       };
     case "INCREMENT_SET":
       return {
@@ -115,6 +115,7 @@ const initialRunnerState: RoutineRunnerState = {
   isTimerModal: false,
   countdown: 60,
   isTimerRunning: false,
+  timerEndsAt: null,
   finished: false,
   recordAdded: false,
   recordSaving: false,
@@ -146,6 +147,7 @@ export function useRoutineRunner() {
     isTimerModal,
     countdown,
     isTimerRunning,
+    timerEndsAt,
     finished,
     recordAdded,
     recordSaving,
@@ -171,21 +173,27 @@ export function useRoutineRunner() {
   }, [routineDetail, defaultTime]);
 
   useEffect(() => {
-    if (!isTimerModal || !isTimerRunning) {
+    if (!isTimerModal || !isTimerRunning || timerEndsAt === null) {
       return;
     }
 
-    if (countdown <= 0) {
-      dispatch({ type: "SET_RUNNING", payload: false });
-      return;
-    }
+    const syncTimer = () => {
+      dispatch({
+        type: "SYNC_TIMER",
+        payload: Math.max(0, Math.ceil((timerEndsAt - Date.now()) / 1000)),
+      });
+    };
+    syncTimer();
+    const interval = setInterval(syncTimer, 1000);
+    const subscription = AppState.addEventListener("change", (appState) => {
+      if (appState === "active") syncTimer();
+    });
 
-    const interval = setInterval(() => {
-      dispatch({ type: "TICK" });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isTimerModal, isTimerRunning, countdown]);
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [isTimerModal, isTimerRunning, timerEndsAt]);
 
   useEffect(() => {
     if (isTimerModal) {
@@ -219,7 +227,10 @@ export function useRoutineRunner() {
       return;
     }
 
-    dispatch({ type: "OPEN_TIMER", payload: { countdown: defaultTime } });
+    dispatch({
+      type: "OPEN_TIMER",
+      payload: { countdown: defaultTime, endsAt: Date.now() + defaultTime * 1000 },
+    });
     scheduleRestTimerNotification(defaultTime).catch((error) => {
       console.error("Failed to schedule rest timer notification", error);
     });
