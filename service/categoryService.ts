@@ -6,6 +6,16 @@ type CategoryRow = {
   name: string;
 };
 
+function parseCategoryId(categoryId: string, action: string) {
+  const numericCategoryId = Number(categoryId);
+
+  if (!Number.isInteger(numericCategoryId) || numericCategoryId <= 0) {
+    throw new Error(`${action} 카테고리 정보가 올바르지 않습니다.`);
+  }
+
+  return numericCategoryId;
+}
+
 export async function addCategory(name: string) {
   const validated = validateCategoryRequestInput({ category: name });
   if (!validated.success) {
@@ -21,6 +31,13 @@ export async function addCategory(name: string) {
     );
   } catch (error) {
     if (isUniqueConstraintError(error)) {
+      const archived = await db.getFirstAsync<{ is_archived: number }>(
+        "SELECT is_archived FROM categories WHERE name = ?",
+        validated.data.category
+      );
+      if (archived?.is_archived === 1) {
+        throw new Error("보관된 같은 이름의 카테고리가 있습니다. 보관 목록에서 복원해주세요.");
+      }
       throw new Error("이미 같은 이름의 카테고리가 있습니다.");
     }
 
@@ -31,14 +48,14 @@ export async function addCategory(name: string) {
 }
 
 export async function deleteCategory(categoryId: string) {
-  const numericCategoryId = Number(categoryId);
-
-  if (!Number.isInteger(numericCategoryId) || numericCategoryId <= 0) {
-    throw new Error("삭제할 카테고리 정보가 올바르지 않습니다.");
-  }
+  const numericCategoryId = parseCategoryId(categoryId, "삭제할");
 
   const db = await getDatabase();
-  const [routineCountRow, recordCountRow] = await Promise.all([
+  const [categoryRow, routineCountRow, recordCountRow] = await Promise.all([
+    db.getFirstAsync<{ is_archived: number }>(
+      "SELECT is_archived FROM categories WHERE id = ?",
+      numericCategoryId
+    ),
     db.getFirstAsync<{ count: number }>(
       "SELECT COUNT(*) as count FROM routines WHERE category_id = ?",
       numericCategoryId
@@ -48,31 +65,54 @@ export async function deleteCategory(categoryId: string) {
       numericCategoryId
     ),
   ]);
+
+  if (!categoryRow) {
+    throw new Error("삭제할 카테고리를 찾지 못했습니다.");
+  }
+  if (categoryRow.is_archived !== 1) {
+    throw new Error("카테고리를 먼저 보관한 뒤 삭제해주세요.");
+  }
+
   const routineCount = routineCountRow?.count ?? 0;
   const recordCount = recordCountRow?.count ?? 0;
 
   if (routineCount > 0 || recordCount > 0) {
     throw new Error(
-      "이 카테고리를 사용하는 루틴 또는 기록이 있어 삭제할 수 없습니다. 관련 데이터를 먼저 정리해주세요."
+      "이 카테고리를 사용하는 루틴 또는 기록이 있어 삭제할 수 없습니다. 카테고리를 보관해주세요."
     );
   }
 
-  const result = await db.runAsync(
+  await db.runAsync(
     "DELETE FROM categories WHERE id = ?",
     numericCategoryId
   );
 
+  return true;
+}
+
+export async function setCategoryArchived(categoryId: string, archived: boolean) {
+  const numericCategoryId = parseCategoryId(categoryId, archived ? "보관할" : "복원할");
+  const db = await getDatabase();
+  const result = await db.runAsync(
+    "UPDATE categories SET is_archived = ? WHERE id = ?",
+    archived ? 1 : 0,
+    numericCategoryId
+  );
+
   if ((result.changes ?? 0) === 0) {
-    throw new Error("삭제할 카테고리를 찾지 못했습니다.");
+    throw new Error(`${archived ? "보관할" : "복원할"} 카테고리를 찾지 못했습니다.`);
   }
 
   return true;
 }
 
-export async function getCategory() {
+export async function getCategory(archivedOnly = false) {
   const db = await getDatabase();
   const rows = await db.getAllAsync<CategoryRow>(
-    "SELECT id, name FROM categories ORDER BY id ASC"
+    `SELECT id, name FROM categories
+     WHERE is_archived = ?
+     ORDER BY id ASC`,
+    archivedOnly ? 1 : 0
   );
 
   return rows.map((row) => ({
@@ -82,8 +122,6 @@ export async function getCategory() {
 }
 
 function isUniqueConstraintError(error: unknown) {
-  return (
-    error instanceof Error &&
-    error.message.toLowerCase().includes("unique constraint failed")
-  );
+  const message = error instanceof Error ? error.message : String(error);
+  return message.toLowerCase().includes("unique constraint failed");
 }

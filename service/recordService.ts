@@ -25,7 +25,7 @@ function mapRecord(row: RecordRow): IRecord {
   };
 }
 
-export async function getRecord(days?: number) {
+export async function getRecord(days?: number, referenceDate = new Date()) {
   const db = await getDatabase();
 
   const query = `
@@ -43,7 +43,7 @@ export async function getRecord(days?: number) {
 
   const params =
     typeof days === "number" && days > 0
-      ? [getStartOfLocalDayUtcIsoString(getDateDaysAgo(days - 1))]
+      ? [getStartOfLocalDayUtcIsoString(getDateDaysAgo(days - 1, referenceDate))]
       : [];
 
   const rows = await db.getAllAsync<RecordRow>(query, ...params);
@@ -67,8 +67,8 @@ export async function addRecord(routine: IRoutineInfo) {
   return true;
 }
 
-function getDateDaysAgo(days: number) {
-  const fromDate = new Date();
+function getDateDaysAgo(days: number, referenceDate: Date) {
+  const fromDate = new Date(referenceDate);
   fromDate.setDate(fromDate.getDate() - days);
   return fromDate;
 }

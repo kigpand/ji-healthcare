@@ -27,9 +27,17 @@ export default function HomeScreen() {
   const [isReminderLoading, setIsReminderLoading] = useState(true);
 
   useEffect(() => {
-    loadReminderState().catch((error) => {
-      console.error("Failed to load reminder state", error);
-    });
+    hasScheduledWorkoutReminder()
+      .then((enabled) => {
+        setIsReminderEnabled(enabled);
+      })
+      .catch((error) => {
+        console.error("Failed to read scheduled workout reminders", error);
+        setIsReminderEnabled(false);
+      })
+      .finally(() => {
+        setIsReminderLoading(false);
+      });
   }, []);
 
   function handleOpenRecord(range?: number) {
@@ -42,18 +50,6 @@ export default function HomeScreen() {
       pathname: PATH.record,
       params: { range: range.toString() },
     });
-  }
-
-  async function loadReminderState() {
-    try {
-      const enabled = await hasScheduledWorkoutReminder();
-      setIsReminderEnabled(enabled);
-    } catch (error) {
-      console.error("Failed to read scheduled workout reminders", error);
-      setIsReminderEnabled(false);
-    } finally {
-      setIsReminderLoading(false);
-    }
   }
 
   async function handleToggleReminder() {
@@ -194,6 +190,11 @@ export default function HomeScreen() {
       )}
 
       <View style={styles.grid}>
+        <HomeButton
+          title="AI 운동 코치"
+          subtitle="내 운동 설정과 이번 주 기록으로 오늘의 운동 추천"
+          onPress={() => router.navigate(PATH.coach)}
+        />
         <HomeButton
           title="운동 루틴"
           subtitle="카테고리별 루틴을 확인하세요"

@@ -1,4 +1,5 @@
 import { useDeleteCategory } from "@/hooks/mutate/useDeleteCategory";
+import { useSetCategoryArchived } from "@/hooks/mutate/useSetCategoryArchived";
 import type { ICategory } from "@/interface/category";
 import { showToast } from "@/utils/showToast";
 import { useCallback } from "react";
@@ -6,10 +7,12 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   item: ICategory;
+  archived?: boolean;
 };
 
-export default function CategoryList({ item }: Props) {
+export default function CategoryList({ item, archived = false }: Props) {
   const deleteCategoryMutation = useDeleteCategory();
+  const archiveMutation = useSetCategoryArchived();
   const deletingCategory = deleteCategoryMutation.variables;
 
   const handleDeleteCategory = useCallback(
@@ -26,39 +29,72 @@ export default function CategoryList({ item }: Props) {
 
   const isDeleting =
     deleteCategoryMutation.isPending && deletingCategory === item.id;
+  const isArchiving =
+    archiveMutation.isPending && archiveMutation.variables?.id === item.id;
+  const isPending = deleteCategoryMutation.isPending || archiveMutation.isPending;
+
+  const handleArchive = useCallback(async () => {
+    if (isPending) return;
+    await archiveMutation.mutateAsync({ id: item.id, archived: !archived });
+    showToast(`카테고리가 ${archived ? "복원" : "보관"}되었습니다.`);
+  }, [archiveMutation, archived, isPending, item.id]);
 
   return (
     <View style={styles.listItem}>
       <View style={styles.categoryInfo}>
         <Text style={styles.categoryText}>{item.name}</Text>
+        <Text style={styles.categoryStatus}>{archived ? "보관됨" : "사용 중"}</Text>
       </View>
-      <Pressable
-        style={({ pressed }) => [
-          styles.deleteButton,
-          deleteCategoryMutation.isPending && styles.buttonDisabled,
-          pressed && styles.buttonPressed,
-        ]}
-        onPress={() =>
-          Alert.alert("카테고리 삭제", "정말 삭제하시겠습니까?", [
-            {
-              text: "아니오",
-              style: "cancel",
-            },
-            {
-              text: "예",
-              style: "destructive",
-              onPress: () => {
-                handleDeleteCategory(item.id).catch((error) => {
-                  console.error("Failed to delete category", error);
-                });
-              },
-            },
-          ])
-        }
-        disabled={deleteCategoryMutation.isPending}
-      >
-        <Text style={styles.buttonText}>{isDeleting ? "삭제중" : "삭제"}</Text>
-      </Pressable>
+      <View style={styles.actions}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.archiveButton,
+            isPending && styles.buttonDisabled,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={() => {
+            handleArchive().catch((error) => {
+              console.error("Failed to update category archive state", error);
+            });
+          }}
+          disabled={isPending}
+        >
+          <Text style={styles.archiveButtonText}>
+            {isArchiving ? "처리중" : archived ? "복원" : "보관"}
+          </Text>
+        </Pressable>
+        {archived ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteButton,
+              isPending && styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() =>
+              Alert.alert("카테고리 삭제", "정말 삭제하시겠습니까?", [
+                {
+                  text: "아니오",
+                  style: "cancel",
+                },
+                {
+                  text: "예",
+                  style: "destructive",
+                  onPress: () => {
+                    handleDeleteCategory(item.id).catch((error) => {
+                      console.error("Failed to delete category", error);
+                    });
+                  },
+                },
+              ])
+            }
+            disabled={isPending}
+          >
+            <Text style={styles.buttonText}>
+              {isDeleting ? "삭제중" : "삭제"}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -87,7 +123,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#0f172a",
-    marginBottom: 4,
+  },
+  categoryStatus: {
+    marginTop: 4,
+    color: "#64748b",
+    fontSize: 12,
+  },
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  archiveButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#dbeafe",
+  },
+  archiveButtonText: {
+    color: "#1d4ed8",
+    fontWeight: "600",
   },
   deleteButton: {
     paddingHorizontal: 14,

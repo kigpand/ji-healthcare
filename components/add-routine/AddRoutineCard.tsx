@@ -60,11 +60,11 @@ export default function AddRoutineCard({
           style={[styles.input, styles.rowInput]}
           value={set.kg}
           onChangeText={(text) =>
-            handleChangeSet(index, "kg", text, { numeric: true })
+            handleChangeSet(index, "kg", text)
           }
           placeholder="무게 (kg)"
-          keyboardType="number-pad"
-          inputMode="numeric"
+          keyboardType="decimal-pad"
+          inputMode="decimal"
         />
       </View>
     </View>

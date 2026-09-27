@@ -6,6 +6,10 @@ const WORKOUT_REMINDER_NOTIFICATION_TYPE = "workout-reminder";
 const DEFAULT_REMINDER_HOUR = 20;
 const DEFAULT_REMINDER_MINUTE = 0;
 
+function isPermissionGranted(permission: object) {
+  return "granted" in permission && permission.granted === true;
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
@@ -29,12 +33,12 @@ export async function configureNotifications() {
 export async function requestNotificationPermission() {
   const permissions = await Notifications.getPermissionsAsync();
 
-  if (permissions.granted) {
+  if (isPermissionGranted(permissions)) {
     return true;
   }
 
   const requested = await Notifications.requestPermissionsAsync();
-  return requested.granted;
+  return isPermissionGranted(requested);
 }
 
 export async function scheduleRestTimerNotification(seconds: number) {
