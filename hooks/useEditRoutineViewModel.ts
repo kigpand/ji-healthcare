@@ -26,7 +26,7 @@ export function useEditRoutineViewModel() {
     isError: categoryError,
     selectedCategory,
     handleChangeCategory,
-  } = useCategorySelection();
+  } = useCategorySelection({ includeArchivedId: routineDetail?.categoryId });
   const { state: formState, dispatch } = useRoutineForm();
   const { title, sets } = formState;
   const initializedCategoryRoutineId = useRef<number | null>(null);

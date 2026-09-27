@@ -6,6 +6,7 @@ import type {
 import { getDatabase, runInTransaction } from "@/lib/database";
 import { validateRoutineRequestInput } from "@/schema/routine.schema";
 import { getCurrentUtcIsoString } from "@/utils/date";
+import type * as SQLite from "expo-sqlite";
 
 type RoutineRow = {
   id: number;
@@ -62,6 +63,23 @@ function buildRoutineItemsPayload(
     sortOrder: item.sortOrder ?? index,
     routineId,
   }));
+}
+
+async function requireActiveCategory(
+  database: SQLite.SQLiteDatabase,
+  categoryId: number
+) {
+  const category = await database.getFirstAsync<{ is_archived: number }>(
+    "SELECT is_archived FROM categories WHERE id = ?",
+    categoryId
+  );
+
+  if (!category) {
+    throw new Error("카테고리를 찾지 못했습니다.");
+  }
+  if (category.is_archived === 1) {
+    throw new Error("보관된 카테고리에는 새 루틴을 등록할 수 없습니다.");
+  }
 }
 
 async function getRoutineRows(categoryId?: string) {
@@ -159,6 +177,7 @@ export async function addRoutine(routine: IRoutineRequest) {
   }
 
   await runInTransaction(async (tx) => {
+    await requireActiveCategory(tx, validated.data.categoryId);
     const insertedRoutine = await tx.runAsync(
       `
         INSERT INTO routines (title, category_id, created_at)
@@ -207,6 +226,17 @@ export async function updateRoutineService(routine: IRoutineInfo) {
   }
 
   await runInTransaction(async (tx) => {
+    const currentRoutine = await tx.getFirstAsync<{ category_id: number | null }>(
+      "SELECT category_id FROM routines WHERE id = ?",
+      routine.id
+    );
+    if (!currentRoutine) {
+      throw new Error("수정할 루틴을 찾지 못했습니다.");
+    }
+    if (currentRoutine.category_id !== validated.data.categoryId) {
+      await requireActiveCategory(tx, validated.data.categoryId);
+    }
+
     const updatedRoutine = await tx.runAsync(
       `
         UPDATE routines
@@ -217,10 +247,6 @@ export async function updateRoutineService(routine: IRoutineInfo) {
       validated.data.categoryId,
       routine.id
     );
-
-    if ((updatedRoutine.changes ?? 0) === 0) {
-      throw new Error("수정할 루틴을 찾지 못했습니다.");
-    }
 
     await tx.runAsync(
       "DELETE FROM routine_items WHERE routine_id = ?",

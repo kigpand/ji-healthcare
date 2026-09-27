@@ -14,13 +14,16 @@ import {
 
 export default function Category() {
   const { data: categories, isLoading, isError, error } = useCategory();
-  const errorMessage = getErrorMessage(error);
+  const archivedQuery = useCategory(true);
+  const archivedCategories = archivedQuery.data ?? [];
+  const errorMessage = getErrorMessage(error ?? archivedQuery.error);
+  const hasError = isError || archivedQuery.isError;
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "카테고리" }} />
       <FlatList
-        data={isLoading || isError ? [] : categories ?? []}
+        data={isLoading || hasError ? [] : categories ?? []}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <CategoryList item={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -55,7 +58,7 @@ export default function Category() {
               </View>
             ) : null}
 
-            {isError ? (
+            {hasError ? (
               <View style={styles.feedbackState}>
                 <Text style={styles.feedbackText}>{errorMessage}</Text>
               </View>
@@ -63,7 +66,7 @@ export default function Category() {
           </>
         }
         ListEmptyComponent={
-          !isLoading && !isError ? (
+          !isLoading && !hasError ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>
                 아직 등록된 카테고리가 없습니다.
@@ -71,6 +74,21 @@ export default function Category() {
               <Text style={styles.emptyText}>
                 위 입력창에서 첫 카테고리를 추가해 루틴 구성을 시작하세요.
               </Text>
+            </View>
+          ) : null
+        }
+        ListFooterComponent={
+          archivedCategories.length ? (
+            <View style={styles.archivedSection}>
+              <Text style={styles.listTitle}>보관된 카테고리</Text>
+              <Text style={styles.listSubtitle}>
+                기존 루틴과 기록은 유지됩니다. 다시 사용할 카테고리는 복원하세요.
+              </Text>
+              <View style={styles.archivedList}>
+                {archivedCategories.map((item) => (
+                  <CategoryList key={item.id} item={item} archived />
+                ))}
+              </View>
             </View>
           ) : null
         }
@@ -137,6 +155,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 40,
+  },
+  archivedSection: {
+    marginTop: 28,
+  },
+  archivedList: {
+    marginTop: 14,
+    gap: 12,
   },
   feedbackText: {
     marginTop: 10,
