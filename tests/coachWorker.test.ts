@@ -101,3 +101,30 @@ test("Worker는 손상된 요청과 AI 응답을 성공으로 처리하지 않�
   );
   expect((await callWorker(JSON.stringify(requestBody))).status).toBe(502);
 });
+
+test("Worker는 기존 루틴의 확장된 입력을 값 변경 없이 모델에 전달한다", async () => {
+  const storedRoutine = {
+    ...requestBody.routines[0],
+    title: "루".repeat(81),
+    routine: Array.from({ length: 31 }, () => ({ title: "스쿼트", set: 21, kg: 1000.5 })),
+  };
+  const openAIFetch = jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+    new Response(JSON.stringify({ output_text: JSON.stringify({
+      kind: "existing", routineId: storedRoutine.id, reason: "추천",
+    }) }), { status: 200 })
+  );
+  const response = await callWorker(JSON.stringify({ ...requestBody, routines: [storedRoutine] }));
+  expect(response.status).toBe(200);
+  const modelRequest = JSON.parse(openAIFetch.mock.calls[0][1]?.body as string);
+  expect(JSON.parse(modelRequest.input[1].content).routines).toEqual([storedRoutine]);
+});
+
+test("Worker는 128KB를 넘는 요청을 모델 호출 전에 거부한다", async () => {
+  const openAIFetch = jest.spyOn(globalThis, "fetch");
+  const response = await callWorker(JSON.stringify({
+    ...requestBody,
+    routines: [{ ...requestBody.routines[0], title: "가".repeat(128 * 1024 / 3) }],
+  }));
+  expect(response.status).toBe(413);
+  expect(openAIFetch).not.toHaveBeenCalled();
+});

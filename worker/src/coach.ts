@@ -4,8 +4,6 @@ import type {
 } from "../../interface/coach";
 import { COACH_REQUEST_LIMITS } from "../../interface/coach";
 
-const MAX_ROUTINE_ITEMS = 30;
-
 export const recommendationSchema = {
   type: "object",
   properties: {
@@ -83,15 +81,15 @@ export function sanitizeCoachRequest(value: unknown): CoachRequest {
     const routine = requireObject(value, "루틴");
     return {
       id: requireInteger(routine.id, 1, Number.MAX_SAFE_INTEGER, "루틴 ID"),
-      title: requireString(routine.title, 80, "루틴 이름"),
-      category: requireString(routine.category, 80, "카테고리 이름"),
+      title: requireString(routine.title, Infinity, "루틴 이름"),
+      category: requireString(routine.category, Infinity, "카테고리 이름"),
       categoryId:
         routine.categoryId === null
           ? null
           : requireInteger(routine.categoryId, 1, Number.MAX_SAFE_INTEGER, "카테고리 ID"),
       createdAt: requireDateTime(routine.createdAt, "루틴 생성일"),
-      routine: requireArray(routine.routine, MAX_ROUTINE_ITEMS, "운동 항목").map(
-        sanitizeRoutineItem
+      routine: requireArray(routine.routine, Infinity, "운동 항목").map(
+        sanitizeStoredRoutineItem
       ),
     };
   });
@@ -105,8 +103,8 @@ export function sanitizeCoachRequest(value: unknown): CoachRequest {
         record.routineId === null
           ? null
           : requireInteger(record.routineId, 1, Number.MAX_SAFE_INTEGER, "기록 루틴 ID"),
-      title: requireString(record.title, 80, "기록 이름"),
-      category: requireString(record.category, 80, "기록 카테고리"),
+      title: requireString(record.title, Infinity, "기록 이름"),
+      category: requireString(record.category, Infinity, "기록 카테고리"),
       date: requireDateTime(record.date, "운동 기록일"),
     };
   });
@@ -115,7 +113,7 @@ export function sanitizeCoachRequest(value: unknown): CoachRequest {
     const category = requireObject(value, "카테고리");
     return {
       id: requireString(category.id, 100, "카테고리 ID"),
-      name: requireString(category.name, 80, "카테고리 이름"),
+      name: requireString(category.name, Infinity, "카테고리 이름"),
     };
   });
 
@@ -166,7 +164,7 @@ export function validateModelRecommendation(
       reason,
       draft: {
         title: requireString(draft.title, 80, "새 루틴 이름"),
-        routine: routine.map(sanitizeRoutineItem),
+        routine: routine.map(sanitizeGeneratedRoutineItem),
       },
     };
   }
@@ -178,7 +176,17 @@ export function validateModelRecommendation(
   throw new Error("AI 추천 종류가 올바르지 않습니다.");
 }
 
-function sanitizeRoutineItem(value: unknown) {
+// 기존 저장값에는 앱과 같은 검증을 적용한다. 요청 전체 크기는 Worker에서 제한한다.
+function sanitizeStoredRoutineItem(value: unknown) {
+  const item = requireObject(value, "운동 항목");
+  return {
+    title: requireString(item.title, Infinity, "운동 이름"),
+    set: requireInteger(item.set, 1, Infinity, "세트 수"),
+    kg: requireNumber(item.kg, 0, Infinity, "운동 무게"),
+  };
+}
+
+function sanitizeGeneratedRoutineItem(value: unknown) {
   const item = requireObject(value, "운동 항목");
   return {
     title: requireString(item.title, 80, "운동 이름"),
