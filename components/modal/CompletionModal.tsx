@@ -1,6 +1,5 @@
 import ModalContainer from "@/components/modal/ModalContainer";
-import { PATH } from "@/constants/path";
-import { useRouter } from "expo-router";
+import { useRecordExitGuard } from "@/hooks/useRecordExitGuard";
 import {
   ActivityIndicator,
   Pressable,
@@ -24,13 +23,12 @@ export default function CompletionModal({
   recordSaveFailed,
   onRetrySaveRecord,
 }: Props) {
-  const router = useRouter();
-
-  const handleGoHome = () => {
-    router.replace(PATH.home);
-  };
-
-  const isHomeDisabled = recordSaving;
+  const { handleGoHome, isHomeDisabled } = useRecordExitGuard({
+    visible,
+    recordAdded,
+    recordSaving,
+    recordSaveFailed,
+  });
 
   function renderStatus() {
     if (recordSaving) {

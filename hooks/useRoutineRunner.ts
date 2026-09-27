@@ -5,7 +5,7 @@ import {
   scheduleRestTimerNotification,
 } from "@/service/notificationService";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 type RoutineRunnerState = {
   currentRoutineIndex: number;
@@ -138,6 +138,7 @@ export function useRoutineRunner() {
   }, [timer]);
 
   const [state, dispatch] = useReducer(runnerReducer, initialRunnerState);
+  const recordSaveInFlight = useRef(false);
 
   const {
     currentRoutineIndex,
@@ -274,11 +275,13 @@ export function useRoutineRunner() {
       !routineDetail ||
       recordAdded ||
       recordSaving ||
-      recordSaveFailed
+      recordSaveFailed ||
+      recordSaveInFlight.current
     ) {
       return;
     }
 
+    recordSaveInFlight.current = true;
     dispatch({ type: "SET_RECORD_SAVING", payload: true });
 
     addRecordMutation
@@ -290,6 +293,7 @@ export function useRoutineRunner() {
         dispatch({ type: "SET_RECORD_SAVE_FAILED", payload: true });
       })
       .finally(() => {
+        recordSaveInFlight.current = false;
         dispatch({ type: "SET_RECORD_SAVING", payload: false });
       });
   }, [
@@ -302,10 +306,11 @@ export function useRoutineRunner() {
   ]);
 
   const handleRetrySaveRecord = useCallback(() => {
-    if (!finished || !routineDetail || recordSaving) {
+    if (!finished || !routineDetail || recordSaving || recordAdded || recordSaveInFlight.current) {
       return;
     }
 
+    recordSaveInFlight.current = true;
     dispatch({ type: "SET_RECORD_SAVE_FAILED", payload: false });
     dispatch({ type: "SET_RECORD_SAVING", payload: true });
 
@@ -318,9 +323,10 @@ export function useRoutineRunner() {
         dispatch({ type: "SET_RECORD_SAVE_FAILED", payload: true });
       })
       .finally(() => {
+        recordSaveInFlight.current = false;
         dispatch({ type: "SET_RECORD_SAVING", payload: false });
       });
-  }, [finished, routineDetail, recordSaving, addRecordMutation]);
+  }, [finished, routineDetail, recordSaving, recordAdded, addRecordMutation]);
 
   useEffect(() => {
     if (!finished) {
