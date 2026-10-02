@@ -2,11 +2,25 @@ import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 
 const DATABASE_NAME = "ji-healthcare.db";
-const LATEST_SCHEMA_VERSION = 3;
+const LATEST_SCHEMA_VERSION = 4;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const migrations: Record<number, string> = {
+  4: `
+    CREATE TABLE IF NOT EXISTS record_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      kg REAL NOT NULL CHECK (kg >= 0),
+      set_count INTEGER NOT NULL CHECK (set_count > 0),
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_record_items_record_id
+      ON record_items (record_id, sort_order);
+  `,
   3: `
     ALTER TABLE categories
       ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0 CHECK (is_archived IN (0, 1));

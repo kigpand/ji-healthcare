@@ -55,12 +55,12 @@ beforeEach(() => {
 });
 afterEach(() => { sqlite.close(); });
 
-test("새 설치에 v3를 적용하고 카테고리 기본값을 사용 중으로 저장한다", async () => {
+test("새 설치에 최신 스키마를 적용하고 카테고리 기본값을 사용 중으로 저장한다", async () => {
   const { initializeDatabase } = require("@/lib/database");
   const { addCategory, getCategory } = require("@/service/categoryService");
   await initializeDatabase();
   await addCategory("하체");
-  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(3);
+  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(4);
   expect(sqlite.prepare("SELECT is_archived FROM categories").get().is_archived).toBe(0);
   await expect(getCategory()).resolves.toEqual([{ id: "1", name: "하체" }]);
   await expect(getCategory(true)).resolves.toEqual([]);
@@ -75,7 +75,7 @@ test("v2 업그레이드·보관·재시작·복원 후 기존 루틴과 기록�
     .map((table) => sqlite.prepare(`SELECT * FROM ${table}`).all());
   const original = snapshot();
   await categories.setCategoryArchived("1", true);
-  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(3);
+  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(4);
   await expect(categories.getCategory()).resolves.toEqual([{ id: "2", name: "상체" }]);
   await expect(categories.getCategory(true)).resolves.toEqual([{ id: "1", name: "하체" }]);
   expect((await getRoutineDetail("1")).category).toBe("하체");

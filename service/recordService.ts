@@ -1,6 +1,6 @@
-import type { IRecord } from "@/interface/record";
+import type { IRecord, IRecordDetail, IRecordItem } from "@/interface/record";
 import type { IRoutineInfo } from "@/interface/routine";
-import { getDatabase } from "@/lib/database";
+import { getDatabase, runInTransaction } from "@/lib/database";
 import {
   getCurrentUtcIsoString,
   getStartOfLocalDayUtcIsoString,
@@ -12,6 +12,14 @@ type RecordRow = {
   title: string;
   recorded_at: string;
   category_name: string | null;
+};
+
+type RecordItemRow = {
+  id: number;
+  title: string;
+  kg: number;
+  set_count: number;
+  sort_order: number;
 };
 
 function mapRecord(row: RecordRow): IRecord {
@@ -51,20 +59,80 @@ export async function getRecord(days?: number, referenceDate = new Date()) {
 }
 
 export async function addRecord(routine: IRoutineInfo) {
-  const db = await getDatabase();
+  await runInTransaction(async (db) => {
+    const record = await db.runAsync(
+      `
+        INSERT INTO records (routine_id, title, category_id, recorded_at)
+        VALUES (?, ?, ?, ?)
+      `,
+      routine.id,
+      routine.title,
+      routine.categoryId,
+      getCurrentUtcIsoString()
+    );
+    const recordId = Number(record.lastInsertRowId);
 
-  await db.runAsync(
-    `
-      INSERT INTO records (routine_id, title, category_id, recorded_at)
-      VALUES (?, ?, ?, ?)
-    `,
-    routine.id,
-    routine.title,
-    routine.categoryId,
-    getCurrentUtcIsoString()
-  );
+    for (const [index, item] of routine.routine.entries()) {
+      await db.runAsync(
+        `
+          INSERT INTO record_items
+            (record_id, title, kg, set_count, sort_order)
+          VALUES (?, ?, ?, ?, ?)
+        `,
+        recordId,
+        item.title,
+        item.kg,
+        item.set,
+        index
+      );
+    }
+  });
 
   return true;
+}
+
+export async function getRecordDetail(recordId: string) {
+  const numericRecordId = Number(recordId);
+  if (!Number.isInteger(numericRecordId) || numericRecordId <= 0) {
+    throw new Error("운동 기록 정보가 올바르지 않습니다.");
+  }
+
+  const db = await getDatabase();
+  const record = await db.getFirstAsync<RecordRow>(
+    `
+      SELECT
+        records.id,
+        records.routine_id,
+        records.title,
+        records.recorded_at,
+        categories.name AS category_name
+      FROM records
+      LEFT JOIN categories ON categories.id = records.category_id
+      WHERE records.id = ?
+    `,
+    numericRecordId
+  );
+
+  if (!record) return null;
+
+  const rows = await db.getAllAsync<RecordItemRow>(
+    `
+      SELECT id, title, kg, set_count, sort_order
+      FROM record_items
+      WHERE record_id = ?
+      ORDER BY sort_order ASC, id ASC
+    `,
+    numericRecordId
+  );
+  const items: IRecordItem[] = rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    kg: row.kg,
+    set: row.set_count,
+    sortOrder: row.sort_order,
+  }));
+
+  return { ...mapRecord(record), items } satisfies IRecordDetail;
 }
 
 function getDateDaysAgo(days: number, referenceDate: Date) {

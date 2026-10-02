@@ -6,3 +6,15 @@ export interface IRecord {
   routineId: number;
   title: string;
 }
+
+export interface IRecordItem {
+  id: number;
+  title: string;
+  kg: number;
+  set: number;
+  sortOrder: number;
+}
+
+export interface IRecordDetail extends IRecord {
+  items: IRecordItem[];
+}
