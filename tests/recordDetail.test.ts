@@ -100,11 +100,40 @@ test("v3 기록을 보존하며 v4 상세 기록 테이블을 추가한다", asy
 
   await initializeDatabase();
 
-  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(4);
+  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(5);
   await expect(getRecordDetail("1")).resolves.toMatchObject({
     id: 1,
     title: "이전 기록",
     items: [],
+  });
+});
+
+test("기존 루틴의 비어 있는 세트 수를 보정해 완료 기록을 저장한다", async () => {
+  sqlite.prepare("UPDATE routine_items SET set_count = NULL WHERE id = 1").run();
+  sqlite
+    .prepare(
+      `INSERT INTO routine_items
+        (routine_id, title, kg, set_count, sort_order)
+       VALUES (1, '런지', 10, 0, 1)`
+    )
+    .run();
+  const { initializeDatabase } = require("@/lib/database");
+  const { getRoutineDetail } = require("@/service/routineService");
+  const { addRecord, getRecordDetail } = require("@/service/recordService");
+
+  await initializeDatabase();
+
+  const routine = await getRoutineDetail("1");
+  expect(
+    routine.routine.map((item: { set: number }) => item.set)
+  ).toEqual([1, 1]);
+
+  await addRecord(routine);
+  await expect(getRecordDetail("2")).resolves.toMatchObject({
+    items: [
+      { title: "스쿼트", kg: 20, set: 1 },
+      { title: "런지", kg: 10, set: 1 },
+    ],
   });
 });
 

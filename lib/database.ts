@@ -2,11 +2,16 @@ import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 
 const DATABASE_NAME = "ji-healthcare.db";
-const LATEST_SCHEMA_VERSION = 4;
+const LATEST_SCHEMA_VERSION = 5;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const migrations: Record<number, string> = {
+  5: `
+    UPDATE routine_items
+    SET set_count = 1
+    WHERE set_count IS NULL OR set_count <= 0;
+  `,
   4: `
     CREATE TABLE IF NOT EXISTS record_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
