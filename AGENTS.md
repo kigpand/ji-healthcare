@@ -2,7 +2,7 @@
 
 ## 공통
 
-- Expo 54 / React Native / TypeScript / 로컬 SQLite 프로젝트다. README.md부터 확인한다.
+- Expo 57 / React Native 0.86 / TypeScript / 로컬 SQLite 프로젝트다. README.md부터 확인한다.
 - 요청 범위, 가정, 성공 조건을 먼저 밝히고 필요한 최소 변경만 한다.
 - 사용자 변경을 보존한다. 관계없는 리팩터링, 의존성 업그레이드, 비밀값 출력은 하지 않는다.
 - npm과 package-lock.json을 기준으로 설치한다. pnpm-lock.yaml은 기존 파일이며 새 변경의 기준으로 사용하지 않는다.
