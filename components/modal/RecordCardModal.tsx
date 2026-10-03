@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -23,25 +24,42 @@ export default function RecordCardModal({
   handleChangeRecord,
 }: Props) {
   const router = useRouter();
+  const { width, fontScale } = useWindowDimensions();
   const detailQuery = useRecordDetail(selectedRecord?._id);
   const detail = detailQuery.data;
+  const compactActions = width < 360 || fontScale > 1.2;
 
   return (
     <ModalContainer
       visible={!!selectedRecord}
       onClose={() => handleChangeRecord(null)}
       title="운동 기록 상세"
+      constrainHeight
       footer={
-        <View style={styles.modalButtons}>
+        <View
+          testID="record-detail-actions"
+          style={[
+            styles.modalButtons,
+            compactActions && styles.modalButtonsCompact,
+          ]}
+        >
           <Pressable
-            style={[styles.modalButton, styles.modalCancel]}
+            style={[
+              styles.modalButton,
+              styles.modalCancel,
+              compactActions && styles.modalButtonCompact,
+            ]}
             onPress={() => handleChangeRecord(null)}
           >
             <Text style={styles.modalButtonText}>닫기</Text>
           </Pressable>
           {selectedRecord?.routineId ? (
             <Pressable
-              style={[styles.modalButton, styles.modalConfirm]}
+              style={[
+                styles.modalButton,
+                styles.modalConfirm,
+                compactActions && styles.modalButtonCompact,
+              ]}
               onPress={() => {
                 router.push({
                   pathname: PATH.play,
@@ -60,47 +78,53 @@ export default function RecordCardModal({
         </View>
       }
     >
-      <Text style={styles.recordTitle}>{selectedRecord?.title ?? ""}</Text>
-      <Text style={styles.recordMeta}>
-        {[
-          selectedRecord?.category,
-          selectedRecord?.date
-            ? format(new Date(selectedRecord.date), "yyyy.MM.dd HH:mm")
-            : null,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </Text>
-
-      {detailQuery.isLoading ? (
-        <ActivityIndicator accessibilityLabel="운동 기록 상세 불러오는 중" />
-      ) : detailQuery.isError ? (
-        <View style={styles.feedback}>
-          <Text style={styles.feedbackText}>
-            운동 상세 기록을 불러오지 못했습니다.
-          </Text>
-          <Pressable onPress={() => detailQuery.refetch()}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
-        </View>
-      ) : detail?.items.length ? (
-        <ScrollView style={styles.itemList}>
-          {detail.items.map((item, index) => (
-            <View key={item.id} style={styles.itemRow}>
-              <Text style={styles.itemTitle}>
-                {index + 1}. {item.title}
-              </Text>
-              <Text style={styles.itemValue}>
-                {item.set}세트 · {item.kg}kg
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <Text style={styles.feedbackText}>
-          상세 운동 항목이 없는 이전 기록입니다.
+      <ScrollView
+        testID="record-detail-body"
+        style={styles.recordBody}
+        contentContainerStyle={styles.recordBodyContent}
+      >
+        <Text style={styles.recordTitle}>{selectedRecord?.title ?? ""}</Text>
+        <Text style={styles.recordMeta}>
+          {[
+            selectedRecord?.category,
+            selectedRecord?.date
+              ? format(new Date(selectedRecord.date), "yyyy.MM.dd HH:mm")
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </Text>
-      )}
+
+        {detailQuery.isLoading ? (
+          <ActivityIndicator accessibilityLabel="운동 기록 상세 불러오는 중" />
+        ) : detailQuery.isError ? (
+          <View style={styles.feedback}>
+            <Text style={styles.feedbackText}>
+              운동 상세 기록을 불러오지 못했습니다.
+            </Text>
+            <Pressable onPress={() => detailQuery.refetch()}>
+              <Text style={styles.retryText}>다시 시도</Text>
+            </Pressable>
+          </View>
+        ) : detail?.items.length ? (
+          <View>
+            {detail.items.map((item, index) => (
+              <View key={item.id} style={styles.itemRow}>
+                <Text style={styles.itemTitle}>
+                  {index + 1}. {item.title}
+                </Text>
+                <Text style={styles.itemValue}>
+                  {item.set}세트 · {item.kg}kg
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.feedbackText}>
+            상세 운동 항목이 없는 이전 기록입니다.
+          </Text>
+        )}
+      </ScrollView>
     </ModalContainer>
   );
 }
@@ -115,8 +139,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6b7280",
   },
-  itemList: {
-    maxHeight: 280,
+  recordBody: {
+    flexShrink: 1,
+  },
+  recordBodyContent: {
+    gap: 12,
   },
   itemRow: {
     paddingVertical: 10,
@@ -153,6 +180,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
+    maxWidth: "100%",
+  },
+  modalButtonsCompact: {
+    flexDirection: "column",
+  },
+  modalButtonCompact: {
+    alignItems: "center",
   },
   modalCancel: {
     backgroundColor: "#e5e7eb",
@@ -164,6 +198,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
+    textAlign: "center",
   },
   modalConfirmText: {
     color: "#fff",
