@@ -117,13 +117,37 @@ async function executeTransaction<T>(
     }
   }
 
-  let result: T | undefined;
-
-  await database.withExclusiveTransactionAsync(async (transaction) => {
-    result = await operation(transaction);
+  const transaction = await SQLite.openDatabaseAsync(DATABASE_NAME, {
+    useNewConnection: true,
   });
+  let transactionStarted = false;
 
-  return result as T;
+  try {
+    await transaction.execAsync("PRAGMA foreign_keys = ON");
+    await transaction.execAsync("BEGIN IMMEDIATE TRANSACTION");
+    transactionStarted = true;
+
+    const result = await operation(transaction);
+    await transaction.execAsync("COMMIT");
+    transactionStarted = false;
+    return result;
+  } catch (error) {
+    if (transactionStarted) {
+      try {
+        await transaction.execAsync("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Failed to rollback SQLite transaction", rollbackError);
+      }
+    }
+
+    throw error;
+  } finally {
+    try {
+      await transaction.closeAsync();
+    } catch (closeError) {
+      console.error("Failed to close SQLite transaction", closeError);
+    }
+  }
 }
 
 async function applyMigrations(database: SQLite.SQLiteDatabase) {
