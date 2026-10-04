@@ -12,6 +12,7 @@ import { AppState } from "react-native";
 type RoutineRunnerState = {
   currentRoutineIndex: number;
   counts: number[];
+  setTargets: number[];
   setWeights: string[][];
   setReps: string[][];
   weightError: string | null;
@@ -32,14 +33,21 @@ type RoutineRunnerAction =
       payload: {
         countdown: number;
         counts: number[];
+        setTargets: number[];
         setWeights: string[][];
         setReps: string[][];
       };
     }
   | { type: "OPEN_TIMER"; payload: { countdown: number; endsAt: number } }
   | { type: "CLOSE_TIMER"; payload: { countdown: number } }
+  | {
+      type: "START_NEXT_SET";
+      payload: { countdown: number; index: number; max: number };
+    }
   | { type: "SYNC_TIMER"; payload: number }
   | { type: "INCREMENT_SET"; payload: { index: number; max: number } }
+  | { type: "ADD_SET"; payload: { routineIndex: number; defaultWeight: string } }
+  | { type: "REMOVE_SET"; payload: { routineIndex: number; minimum: number } }
   | {
       type: "UPDATE_SET_WEIGHT";
       payload: { routineIndex: number; setIndex: number; value: string };
@@ -62,6 +70,7 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
       return {
         currentRoutineIndex: 0,
         counts: action.payload.counts,
+        setTargets: action.payload.setTargets,
         setWeights: action.payload.setWeights,
         setReps: action.payload.setReps,
         weightError: null,
@@ -91,6 +100,20 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         timerEndsAt: null,
         countdown: action.payload.countdown,
       };
+    case "START_NEXT_SET":
+      if (!state.isTimerModal) return state;
+      return {
+        ...state,
+        isTimerModal: false,
+        isTimerRunning: false,
+        timerEndsAt: null,
+        countdown: action.payload.countdown,
+        counts: state.counts.map((count, index) =>
+          index === action.payload.index
+            ? Math.min(count + 1, action.payload.max)
+            : count
+        ),
+      };
     case "SYNC_TIMER":
       return {
         ...state,
@@ -104,6 +127,42 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
           idx === action.payload.index
             ? Math.min(count + 1, action.payload.max)
             : count
+        ),
+      };
+    case "ADD_SET":
+      return {
+        ...state,
+        setTargets: state.setTargets.map((target, index) =>
+          index === action.payload.routineIndex ? target + 1 : target
+        ),
+        setWeights: state.setWeights.map((weights, index) =>
+          index === action.payload.routineIndex
+            ? [...weights, action.payload.defaultWeight]
+            : weights
+        ),
+        setReps: state.setReps.map((reps, index) =>
+          index === action.payload.routineIndex ? [...reps, ""] : reps
+        ),
+      };
+    case "REMOVE_SET":
+      return {
+        ...state,
+        setTargets: state.setTargets.map((target, index) =>
+          index === action.payload.routineIndex
+            ? Math.max(action.payload.minimum, target - 1)
+            : target
+        ),
+        setWeights: state.setWeights.map((weights, index) =>
+          index === action.payload.routineIndex &&
+          weights.length > action.payload.minimum
+            ? weights.slice(0, -1)
+            : weights
+        ),
+        setReps: state.setReps.map((reps, index) =>
+          index === action.payload.routineIndex &&
+          reps.length > action.payload.minimum
+            ? reps.slice(0, -1)
+            : reps
         ),
       };
     case "UPDATE_SET_WEIGHT":
@@ -171,6 +230,7 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
 const initialRunnerState: RoutineRunnerState = {
   currentRoutineIndex: 0,
   counts: [],
+  setTargets: [],
   setWeights: [],
   setReps: [],
   weightError: null,
@@ -207,6 +267,7 @@ export function useRoutineRunner() {
   const {
     currentRoutineIndex,
     counts,
+    setTargets,
     setWeights,
     setReps,
     weightError,
@@ -233,6 +294,7 @@ export function useRoutineRunner() {
         type: "RESET",
         payload: {
           counts: routineDetail.routine.map(() => 0),
+          setTargets: routineDetail.routine.map((item) => item.set),
           setWeights: routineDetail.routine.map((item) =>
             Array.from({ length: item.set }, () => item.kg.toString())
           ),
@@ -270,13 +332,16 @@ export function useRoutineRunner() {
 
   useEffect(() => {
     if (isTimerModal) {
+      scheduleRestTimerNotification(defaultTime).catch((error) => {
+        console.error("Failed to schedule rest timer notification", error);
+      });
       return;
     }
 
     cancelRestTimerNotifications().catch((error) => {
       console.error("Failed to cancel rest timer notifications", error);
     });
-  }, [isTimerModal]);
+  }, [defaultTime, isTimerModal]);
 
   const handleSetWeightChange = useCallback(
     (value: string) => {
@@ -307,6 +372,31 @@ export function useRoutineRunner() {
       });
     }, [counts, currentExercise, currentRoutineIndex, finished]
   );
+
+  const handleAddSet = useCallback(() => {
+    if (!currentExercise || finished) return;
+
+    const weights = setWeights[currentRoutineIndex] ?? [];
+    dispatch({
+      type: "ADD_SET",
+      payload: {
+        routineIndex: currentRoutineIndex,
+        defaultWeight: weights.at(-1) ?? currentExercise.kg.toString(),
+      },
+    });
+  }, [currentExercise, currentRoutineIndex, finished, setWeights]);
+
+  const handleRemoveSet = useCallback(() => {
+    if (!currentExercise || finished) return;
+
+    dispatch({
+      type: "REMOVE_SET",
+      payload: {
+        routineIndex: currentRoutineIndex,
+        minimum: (counts[currentRoutineIndex] ?? 0) + 1,
+      },
+    });
+  }, [counts, currentExercise, currentRoutineIndex, finished]);
 
   const handleCompleteSet = () => {
     if (!currentExercise || finished) {
@@ -342,17 +432,19 @@ export function useRoutineRunner() {
       return;
     }
 
-    if (currentCount >= currentExercise.set) {
+    const currentTarget = setTargets[currentRoutineIndex] ?? currentExercise.set;
+
+    if (currentCount >= currentTarget) {
       return;
     }
 
     const isLastExercise = currentRoutineIndex === totalRoutines - 1;
-    const isFinalSet = currentCount + 1 >= currentExercise.set;
+    const isFinalSet = currentCount + 1 >= currentTarget;
 
     if (isLastExercise && isFinalSet) {
       dispatch({
         type: "INCREMENT_SET",
-        payload: { index: currentRoutineIndex, max: currentExercise.set },
+        payload: { index: currentRoutineIndex, max: currentTarget },
       });
       return;
     }
@@ -360,9 +452,6 @@ export function useRoutineRunner() {
     dispatch({
       type: "OPEN_TIMER",
       payload: { countdown: defaultTime, endsAt: Date.now() + defaultTime * 1000 },
-    });
-    scheduleRestTimerNotification(defaultTime).catch((error) => {
-      console.error("Failed to schedule rest timer notification", error);
     });
   };
 
@@ -376,12 +465,15 @@ export function useRoutineRunner() {
       return;
     }
 
-    dispatch({ type: "CLOSE_TIMER", payload: { countdown: defaultTime } });
     dispatch({
-      type: "INCREMENT_SET",
-      payload: { index: currentRoutineIndex, max: currentExercise.set },
+      type: "START_NEXT_SET",
+      payload: {
+        countdown: defaultTime,
+        index: currentRoutineIndex,
+        max: setTargets[currentRoutineIndex] ?? currentExercise.set,
+      },
     });
-  }, [currentExercise, currentRoutineIndex, defaultTime]);
+  }, [currentExercise, currentRoutineIndex, defaultTime, setTargets]);
 
   useEffect(() => {
     if (!currentExercise || finished) {
@@ -393,7 +485,10 @@ export function useRoutineRunner() {
       return;
     }
 
-    if (currentCount < currentExercise.set) {
+    if (
+      currentCount <
+      (setTargets[currentRoutineIndex] ?? currentExercise.set)
+    ) {
       return;
     }
 
@@ -406,6 +501,7 @@ export function useRoutineRunner() {
     counts,
     currentExercise,
     currentRoutineIndex,
+    setTargets,
     totalRoutines,
     finished,
   ]);
@@ -417,13 +513,14 @@ export function useRoutineRunner() {
       ...routineDetail,
       routine: routineDetail.routine.map((item, index) => ({
         ...item,
+        set: setTargets[index] ?? item.set,
         setKgs: (setWeights[index] ?? []).map(Number),
         setReps: (setReps[index] ?? []).map((reps) =>
           reps.trim() ? Number(reps) : null
         ),
       })),
     };
-  }, [routineDetail, setReps, setWeights]);
+  }, [routineDetail, setReps, setTargets, setWeights]);
 
   useEffect(() => {
     if (
@@ -502,6 +599,7 @@ export function useRoutineRunner() {
     defaultTime,
     currentRoutineIndex,
     counts,
+    setTargets,
     setWeights,
     setReps,
     weightError,
@@ -516,6 +614,8 @@ export function useRoutineRunner() {
     handleCompleteSet,
     handleSetWeightChange,
     handleSetRepsChange,
+    handleAddSet,
+    handleRemoveSet,
     handleStartNextSet,
     handleRetrySaveRecord,
   };

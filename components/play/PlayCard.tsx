@@ -8,6 +8,7 @@ type Props = {
   finished: boolean;
   currentRoutineIndex: number;
   totalRoutines: number;
+  setCount: number;
   currentSetWeight?: string;
   currentSetReps?: string;
   weightError?: string | null;
@@ -15,6 +16,8 @@ type Props = {
   handleCompleteSet: () => void;
   onChangeSetWeight?: (value: string) => void;
   onChangeSetReps?: (value: string) => void;
+  onAddSet?: () => void;
+  onRemoveSet?: () => void;
   onPressVideo?: (link: string) => void;
 };
 
@@ -25,6 +28,7 @@ export default function PlayCard({
   finished,
   currentRoutineIndex,
   totalRoutines,
+  setCount,
   currentSetWeight,
   currentSetReps,
   weightError,
@@ -32,13 +36,16 @@ export default function PlayCard({
   handleCompleteSet,
   onChangeSetWeight,
   onChangeSetReps,
+  onAddSet,
+  onRemoveSet,
   onPressVideo,
 }: Props) {
   const count = counts[index] ?? 0;
   const isActive = index === currentRoutineIndex;
-  const isCompleted = count >= routine.set;
+  const isCompleted = count >= setCount;
   const isLastExercise = index === totalRoutines - 1;
   const isFinalSet = isActive && isCompleted && isLastExercise;
+  const canRemoveSet = setCount > count + 1;
 
   return (
     <View
@@ -52,7 +59,7 @@ export default function PlayCard({
         {index + 1}. {routine.title}
       </Text>
       <Text style={styles.exerciseDetail}>
-        {routine.set}세트 · {routine.kg}kg
+        {setCount}세트 · {routine.kg}kg
       </Text>
       {routine.link ? (
         <Pressable
@@ -63,7 +70,7 @@ export default function PlayCard({
         </Pressable>
       ) : null}
       <Text style={styles.countText}>
-        진행: {count}/{routine.set}
+        진행: {count}/{setCount}
       </Text>
       {isActive && !isCompleted && !finished ? (
         <View style={styles.weightField}>
@@ -98,6 +105,27 @@ export default function PlayCard({
           {repsError ? (
             <Text style={styles.weightError}>{repsError}</Text>
           ) : null}
+          <View style={styles.setActions}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.setActionButton}
+              onPress={onAddSet}
+            >
+              <Text style={styles.setActionText}>세트 추가</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.setActionButton,
+                !canRemoveSet && styles.setActionDisabled,
+              ]}
+              onPress={onRemoveSet}
+              disabled={!canRemoveSet}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canRemoveSet }}
+            >
+              <Text style={styles.setActionText}>마지막 세트 삭제</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
       {isFinalSet && finished && (
@@ -185,6 +213,26 @@ const styles = StyleSheet.create({
   },
   weightError: {
     color: "#dc2626",
+  },
+  setActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  setActionButton: {
+    borderWidth: 1,
+    borderColor: "#2563eb",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  setActionDisabled: {
+    opacity: 0.4,
+  },
+  setActionText: {
+    color: "#2563eb",
+    fontWeight: "600",
   },
   finishText: {
     marginTop: 12,

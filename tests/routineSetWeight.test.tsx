@@ -1,5 +1,6 @@
 import React from "react";
 import { useRoutineRunner } from "@/hooks/useRoutineRunner";
+import { scheduleRestTimerNotification } from "@/service/notificationService";
 
 const TestRenderer = require("react-test-renderer");
 const { act } = TestRenderer;
@@ -37,6 +38,7 @@ function Probe() {
 
 beforeEach(() => {
   mockSave.mockClear();
+  (scheduleRestTimerNotification as jest.Mock).mockClear();
   act(() => {
     renderer = TestRenderer.create(<Probe />);
   });
@@ -124,4 +126,85 @@ test("안전한 정수 범위를 벗어난 반복 횟수로는 세트를 완료�
   expect(model.counts).toEqual([0]);
   expect(model.isTimerModal).toBe(false);
   expect(model.repsError).toBe("반복 횟수는 1 이상의 정수로 입력해주세요.");
+});
+
+test("운동 중 추가한 세트를 최종 구성과 함께 저장한다", async () => {
+  act(() => {
+    model.handleAddSet();
+  });
+  expect(model.setTargets).toEqual([3]);
+  expect(model.setWeights).toEqual([["20", "20", "20"]]);
+  expect(model.setReps).toEqual([["", "", ""]]);
+
+  act(() => {
+    model.handleCompleteSet();
+  });
+  act(() => {
+    model.handleStartNextSet();
+  });
+  act(() => {
+    model.handleCompleteSet();
+  });
+  act(() => {
+    model.handleStartNextSet();
+  });
+  await act(async () => {
+    model.handleCompleteSet();
+  });
+
+  expect(mockSave).toHaveBeenCalledTimes(1);
+  expect(mockSave.mock.calls[0][0].routine[0]).toMatchObject({
+    set: 3,
+    setKgs: [20, 20, 20],
+    setReps: [null, null, null],
+  });
+});
+
+test("아직 수행하지 않은 마지막 세트만 삭제한다", () => {
+  act(() => {
+    model.handleAddSet();
+    model.handleRemoveSet();
+  });
+  expect(model.setTargets).toEqual([2]);
+
+  act(() => {
+    model.handleCompleteSet();
+  });
+  act(() => {
+    model.handleStartNextSet();
+  });
+  act(() => {
+    model.handleRemoveSet();
+  });
+
+  expect(model.counts).toEqual([1]);
+  expect(model.setTargets).toEqual([2]);
+  expect(model.setWeights[0]).toHaveLength(2);
+});
+
+test("휴식 완료를 빠르게 연속 실행해도 다음 세트로 한 번만 이동한다", () => {
+  act(() => {
+    model.handleAddSet();
+    model.handleCompleteSet();
+  });
+  expect(model.isTimerModal).toBe(true);
+
+  act(() => {
+    model.handleStartNextSet();
+    model.handleStartNextSet();
+  });
+
+  expect(model.isTimerModal).toBe(false);
+  expect(model.counts).toEqual([1]);
+  expect(model.setTargets).toEqual([3]);
+});
+
+test("세트 완료를 빠르게 연속 실행해도 휴식 알림을 한 번만 예약한다", () => {
+  act(() => {
+    model.handleCompleteSet();
+    model.handleCompleteSet();
+  });
+
+  expect(model.isTimerModal).toBe(true);
+  expect(scheduleRestTimerNotification).toHaveBeenCalledTimes(1);
 });

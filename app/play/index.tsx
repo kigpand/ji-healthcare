@@ -32,6 +32,7 @@ export default function Play() {
     defaultTime,
     currentRoutineIndex,
     counts,
+    setTargets,
     setWeights,
     setReps,
     weightError,
@@ -46,6 +47,8 @@ export default function Play() {
     handleCompleteSet,
     handleSetWeightChange,
     handleSetRepsChange,
+    handleAddSet,
+    handleRemoveSet,
     handleStartNextSet,
     handleRetrySaveRecord,
   } = useRoutineRunner();
@@ -87,6 +90,7 @@ export default function Play() {
               finished={finished}
               currentRoutineIndex={currentRoutineIndex}
               totalRoutines={totalRoutines}
+              setCount={setTargets[index] ?? routine.set}
               currentSetWeight={
                 index === currentRoutineIndex
                   ? setWeights[index]?.[counts[index] ?? 0]
@@ -104,6 +108,8 @@ export default function Play() {
               handleCompleteSet={handleCompleteSet}
               onChangeSetWeight={handleSetWeightChange}
               onChangeSetReps={handleSetRepsChange}
+              onAddSet={handleAddSet}
+              onRemoveSet={handleRemoveSet}
               onPressVideo={openVideo}
             />
           );
