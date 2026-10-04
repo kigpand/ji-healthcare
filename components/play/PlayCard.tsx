@@ -1,5 +1,5 @@
 import type { IRoutineData } from "@/interface/routine";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 type Props = {
   index: number;
@@ -8,7 +8,10 @@ type Props = {
   finished: boolean;
   currentRoutineIndex: number;
   totalRoutines: number;
+  currentSetWeight?: string;
+  weightError?: string | null;
   handleCompleteSet: () => void;
+  onChangeSetWeight?: (value: string) => void;
   onPressVideo?: (link: string) => void;
 };
 
@@ -19,7 +22,10 @@ export default function PlayCard({
   finished,
   currentRoutineIndex,
   totalRoutines,
+  currentSetWeight,
+  weightError,
   handleCompleteSet,
+  onChangeSetWeight,
   onPressVideo,
 }: Props) {
   const count = counts[index] ?? 0;
@@ -53,6 +59,25 @@ export default function PlayCard({
       <Text style={styles.countText}>
         진행: {count}/{routine.set}
       </Text>
+      {isActive && !isCompleted && !finished ? (
+        <View style={styles.weightField}>
+          <Text style={styles.weightLabel}>{count + 1}세트 무게</Text>
+          <View style={styles.weightInputRow}>
+            <TextInput
+              accessibilityLabel={`${routine.title} ${count + 1}세트 무게`}
+              style={[styles.weightInput, weightError && styles.weightInputError]}
+              value={currentSetWeight ?? ""}
+              onChangeText={onChangeSetWeight}
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
+            <Text style={styles.weightUnit}>kg</Text>
+          </View>
+          {weightError ? (
+            <Text style={styles.weightError}>{weightError}</Text>
+          ) : null}
+        </View>
+      ) : null}
       {isFinalSet && finished && (
         <Text style={styles.finishText}>운동 끝!</Text>
       )}
@@ -107,6 +132,37 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 16,
     fontWeight: "600",
+  },
+  weightField: {
+    marginTop: 12,
+    gap: 6,
+  },
+  weightLabel: {
+    color: "#374151",
+    fontWeight: "600",
+  },
+  weightInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  weightInput: {
+    minWidth: 100,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  weightInputError: {
+    borderColor: "#dc2626",
+  },
+  weightUnit: {
+    color: "#4b5563",
+  },
+  weightError: {
+    color: "#dc2626",
   },
   finishText: {
     marginTop: 12,

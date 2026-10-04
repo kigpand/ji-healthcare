@@ -1,5 +1,6 @@
 import { useAddRecord } from "@/hooks/mutate/useAddRecord";
 import { useRoutineDetail } from "@/hooks/queries/useRoutine";
+import type { ICompletedRoutine } from "@/interface/record";
 import {
   cancelRestTimerNotifications,
   scheduleRestTimerNotification,
@@ -11,6 +12,8 @@ import { AppState } from "react-native";
 type RoutineRunnerState = {
   currentRoutineIndex: number;
   counts: number[];
+  setWeights: string[][];
+  weightError: string | null;
   isTimerModal: boolean;
   countdown: number;
   isTimerRunning: boolean;
@@ -22,11 +25,19 @@ type RoutineRunnerState = {
 };
 
 type RoutineRunnerAction =
-  | { type: "RESET"; payload: { countdown: number; counts: number[] } }
+  | {
+      type: "RESET";
+      payload: { countdown: number; counts: number[]; setWeights: string[][] };
+    }
   | { type: "OPEN_TIMER"; payload: { countdown: number; endsAt: number } }
   | { type: "CLOSE_TIMER"; payload: { countdown: number } }
   | { type: "SYNC_TIMER"; payload: number }
   | { type: "INCREMENT_SET"; payload: { index: number; max: number } }
+  | {
+      type: "UPDATE_SET_WEIGHT";
+      payload: { routineIndex: number; setIndex: number; value: string };
+    }
+  | { type: "SET_WEIGHT_ERROR"; payload: string | null }
   | { type: "MOVE_NEXT_ROUTINE" }
   | { type: "FINISH" }
   | { type: "SET_RECORD_ADDED"; payload: boolean }
@@ -39,6 +50,8 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
       return {
         currentRoutineIndex: 0,
         counts: action.payload.counts,
+        setWeights: action.payload.setWeights,
+        weightError: null,
         isTimerModal: false,
         countdown: action.payload.countdown,
         isTimerRunning: false,
@@ -79,6 +92,22 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
             : count
         ),
       };
+    case "UPDATE_SET_WEIGHT":
+      return {
+        ...state,
+        setWeights: state.setWeights.map((weights, routineIndex) =>
+          routineIndex === action.payload.routineIndex
+            ? weights.map((weight, setIndex) =>
+                setIndex === action.payload.setIndex
+                  ? action.payload.value
+                  : weight
+              )
+            : weights
+        ),
+        weightError: null,
+      };
+    case "SET_WEIGHT_ERROR":
+      return { ...state, weightError: action.payload };
     case "MOVE_NEXT_ROUTINE":
       return {
         ...state,
@@ -112,6 +141,8 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
 const initialRunnerState: RoutineRunnerState = {
   currentRoutineIndex: 0,
   counts: [],
+  setWeights: [],
+  weightError: null,
   isTimerModal: false,
   countdown: 60,
   isTimerRunning: false,
@@ -144,6 +175,8 @@ export function useRoutineRunner() {
   const {
     currentRoutineIndex,
     counts,
+    setWeights,
+    weightError,
     isTimerModal,
     countdown,
     isTimerRunning,
@@ -166,6 +199,9 @@ export function useRoutineRunner() {
         type: "RESET",
         payload: {
           counts: routineDetail.routine.map(() => 0),
+          setWeights: routineDetail.routine.map((item) =>
+            Array.from({ length: item.set }, () => item.kg.toString())
+          ),
           countdown: defaultTime,
         },
       });
@@ -205,12 +241,41 @@ export function useRoutineRunner() {
     });
   }, [isTimerModal]);
 
+  const handleSetWeightChange = useCallback(
+    (value: string) => {
+      if (!currentExercise || finished) return;
+
+      dispatch({
+        type: "UPDATE_SET_WEIGHT",
+        payload: {
+          routineIndex: currentRoutineIndex,
+          setIndex: counts[currentRoutineIndex] ?? 0,
+          value,
+        },
+      });
+    }, [counts, currentExercise, currentRoutineIndex, finished]
+  );
+
   const handleCompleteSet = () => {
     if (!currentExercise || finished) {
       return;
     }
 
     const currentCount = counts[currentRoutineIndex] ?? 0;
+    const currentWeightText = setWeights[currentRoutineIndex]?.[currentCount];
+    const currentWeight = Number(currentWeightText);
+
+    if (
+      !currentWeightText?.trim() ||
+      !Number.isFinite(currentWeight) ||
+      currentWeight < 0
+    ) {
+      dispatch({
+        type: "SET_WEIGHT_ERROR",
+        payload: "0 이상의 올바른 무게를 입력해주세요.",
+      });
+      return;
+    }
 
     if (currentCount >= currentExercise.set) {
       return;
@@ -280,10 +345,22 @@ export function useRoutineRunner() {
     finished,
   ]);
 
+  const completedRoutine = useMemo<ICompletedRoutine | null>(() => {
+    if (!routineDetail) return null;
+
+    return {
+      ...routineDetail,
+      routine: routineDetail.routine.map((item, index) => ({
+        ...item,
+        setKgs: (setWeights[index] ?? []).map(Number),
+      })),
+    };
+  }, [routineDetail, setWeights]);
+
   useEffect(() => {
     if (
       !finished ||
-      !routineDetail ||
+      !completedRoutine ||
       recordAdded ||
       recordSaving ||
       recordSaveFailed ||
@@ -296,7 +373,7 @@ export function useRoutineRunner() {
     dispatch({ type: "SET_RECORD_SAVING", payload: true });
 
     addRecordMutation
-      .mutateAsync(routineDetail)
+      .mutateAsync(completedRoutine)
       .then(() => {
         dispatch({ type: "SET_RECORD_ADDED", payload: true });
       })
@@ -309,7 +386,7 @@ export function useRoutineRunner() {
       });
   }, [
     finished,
-    routineDetail,
+    completedRoutine,
     recordAdded,
     recordSaving,
     recordSaveFailed,
@@ -317,7 +394,7 @@ export function useRoutineRunner() {
   ]);
 
   const handleRetrySaveRecord = useCallback(() => {
-    if (!finished || !routineDetail || recordSaving || recordAdded || recordSaveInFlight.current) {
+    if (!finished || !completedRoutine || recordSaving || recordAdded || recordSaveInFlight.current) {
       return;
     }
 
@@ -326,7 +403,7 @@ export function useRoutineRunner() {
     dispatch({ type: "SET_RECORD_SAVING", payload: true });
 
     addRecordMutation
-      .mutateAsync(routineDetail)
+      .mutateAsync(completedRoutine)
       .then(() => {
         dispatch({ type: "SET_RECORD_ADDED", payload: true });
       })
@@ -337,7 +414,7 @@ export function useRoutineRunner() {
         recordSaveInFlight.current = false;
         dispatch({ type: "SET_RECORD_SAVING", payload: false });
       });
-  }, [finished, routineDetail, recordSaving, recordAdded, addRecordMutation]);
+  }, [finished, completedRoutine, recordSaving, recordAdded, addRecordMutation]);
 
   useEffect(() => {
     if (!finished) {
@@ -357,6 +434,8 @@ export function useRoutineRunner() {
     defaultTime,
     currentRoutineIndex,
     counts,
+    setWeights,
+    weightError,
     finished,
     totalRoutines,
     isTimerModal,
@@ -365,6 +444,7 @@ export function useRoutineRunner() {
     recordSaving,
     recordSaveFailed,
     handleCompleteSet,
+    handleSetWeightChange,
     handleStartNextSet,
     handleRetrySaveRecord,
   };

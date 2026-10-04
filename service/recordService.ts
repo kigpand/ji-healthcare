@@ -1,5 +1,9 @@
-import type { IRecord, IRecordDetail, IRecordItem } from "@/interface/record";
-import type { IRoutineInfo } from "@/interface/routine";
+import type {
+  ICompletedRoutine,
+  IRecord,
+  IRecordDetail,
+  IRecordItem,
+} from "@/interface/record";
 import { getDatabase, runInTransaction } from "@/lib/database";
 import {
   getCurrentUtcIsoString,
@@ -65,13 +69,19 @@ export async function getRecord(days?: number, referenceDate = new Date()) {
   return rows.map(mapRecord);
 }
 
-export async function addRecord(routine: IRoutineInfo) {
+export async function addRecord(routine: ICompletedRoutine) {
   routine.routine.forEach((item) => {
     if (!Number.isInteger(item.set) || item.set <= 0) {
       throw new Error("완료 운동의 세트 수가 올바르지 않습니다.");
     }
     if (!Number.isFinite(item.kg) || item.kg < 0) {
       throw new Error("완료 운동의 무게가 올바르지 않습니다.");
+    }
+    if (
+      item.setKgs.length !== item.set ||
+      item.setKgs.some((kg) => !Number.isFinite(kg) || kg < 0)
+    ) {
+      throw new Error("완료 운동의 세트별 무게가 올바르지 않습니다.");
     }
   });
 
@@ -103,22 +113,23 @@ export async function addRecord(routine: IRoutineInfo) {
       );
       const recordItemId = Number(recordItem.lastInsertRowId);
 
+      const setValues = item.setKgs.map(() => "(?, ?)").join(", ");
+      const setParams = item.setKgs.flatMap((kg, setIndex) => [
+        setIndex + 1,
+        kg,
+      ]);
+
       await db.runAsync(
         `
-          WITH RECURSIVE set_numbers (set_number) AS (
-            SELECT 1
-            UNION ALL
-            SELECT set_number + 1
-            FROM set_numbers
-            WHERE set_number < ?
+          WITH completed_sets(set_number, kg) AS (
+            VALUES ${setValues}
           )
           INSERT INTO record_sets (record_item_id, set_number, kg)
-          SELECT ?, set_number, ?
-          FROM set_numbers
+          SELECT ?, set_number, kg
+          FROM completed_sets
         `,
-        item.set,
-        recordItemId,
-        item.kg
+        ...setParams,
+        recordItemId
       );
     }
   });

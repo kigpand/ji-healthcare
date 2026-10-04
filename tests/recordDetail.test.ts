@@ -135,7 +135,13 @@ test("기존 루틴의 비어 있는 세트 수를 보정해 완료 기록을 �
     routine.routine.map((item: { set: number }) => item.set)
   ).toEqual([1, 1, 2]);
 
-  await addRecord(routine);
+  await addRecord({
+    ...routine,
+    routine: routine.routine.map((item: { set: number; kg: number }) => ({
+      ...item,
+      setKgs: Array.from({ length: item.set }, () => item.kg),
+    })),
+  });
   await expect(getRecordDetail("2")).resolves.toMatchObject({
     items: [
       { title: "스쿼트", kg: 20, set: 1 },
@@ -163,8 +169,8 @@ test("운동 완료 시 항목을 저장해 이후 루틴 변경과 관계없이
     category: "하체",
     createdAt: "2026-09-01T00:00:00.000Z",
     routine: [
-      { title: "스쿼트", kg: 22.5, set: 3 },
-      { title: "런지", kg: 10, set: 2 },
+      { title: "스쿼트", kg: 22.5, set: 3, setKgs: [20, 22.5, 25] },
+      { title: "런지", kg: 10, set: 2, setKgs: [10, 12] },
     ],
   });
 
@@ -182,9 +188,9 @@ test("운동 완료 시 항목을 저장해 이후 루틴 변경과 관계없이
         set: 3,
         sortOrder: 0,
         sets: [
-          { setNumber: 1, kg: 22.5 },
+          { setNumber: 1, kg: 20 },
           { setNumber: 2, kg: 22.5 },
-          { setNumber: 3, kg: 22.5 },
+          { setNumber: 3, kg: 25 },
         ],
       },
       {
@@ -194,7 +200,7 @@ test("운동 완료 시 항목을 저장해 이후 루틴 변경과 관계없이
         sortOrder: 1,
         sets: [
           { setNumber: 1, kg: 10 },
-          { setNumber: 2, kg: 10 },
+          { setNumber: 2, kg: 12 },
         ],
       },
     ],
@@ -263,7 +269,7 @@ test("상세 항목 저장 실패 시 기록 본문도 함께 롤백한다", asy
       categoryId: 1,
       category: "하체",
       createdAt: "2026-09-01T00:00:00.000Z",
-      routine: [{ title: "스쿼트", kg: 20, set: 3 }],
+      routine: [{ title: "스쿼트", kg: 20, set: 3, setKgs: [20, 20, 20] }],
     })
   ).rejects.toThrow("항목 저장 실패");
 
@@ -282,9 +288,29 @@ test("분수형 세트 수인 완료 운동은 저장 전에 거부한다", asyn
       categoryId: 1,
       category: "하체",
       createdAt: "2026-09-01T00:00:00.000Z",
-      routine: [{ title: "스쿼트", kg: 20, set: 1.5 }],
+      routine: [{ title: "스쿼트", kg: 20, set: 1.5, setKgs: [20] }],
     })
   ).rejects.toThrow("완료 운동의 세트 수가 올바르지 않습니다.");
+
+  expect(sqlite.prepare("SELECT COUNT(*) AS count FROM records").get().count).toBe(1);
+});
+
+test.each([
+  ["세트 수와 다른 개수", [20]],
+  ["유효하지 않은 값", [20, Number.NaN]],
+])("%s의 세트별 무게는 저장 전에 거부한다", async (_, setKgs) => {
+  const { addRecord } = require("@/service/recordService");
+
+  await expect(
+    addRecord({
+      id: 1,
+      title: "하체 루틴",
+      categoryId: 1,
+      category: "하체",
+      createdAt: "2026-09-01T00:00:00.000Z",
+      routine: [{ title: "스쿼트", kg: 20, set: 2, setKgs }],
+    })
+  ).rejects.toThrow("완료 운동의 세트별 무게가 올바르지 않습니다.");
 
   expect(sqlite.prepare("SELECT COUNT(*) AS count FROM records").get().count).toBe(1);
 });
@@ -308,7 +334,7 @@ test("세트별 무게 스냅샷 저장 실패 시 완료 기록 전체를 롤�
       categoryId: 1,
       category: "하체",
       createdAt: "2026-09-01T00:00:00.000Z",
-      routine: [{ title: "스쿼트", kg: 20, set: 3 }],
+      routine: [{ title: "스쿼트", kg: 20, set: 3, setKgs: [20, 20, 20] }],
     })
   ).rejects.toThrow("세트 저장 실패");
 

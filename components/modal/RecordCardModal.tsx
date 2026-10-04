@@ -114,8 +114,16 @@ export default function RecordCardModal({
                   {index + 1}. {item.title}
                 </Text>
                 <Text style={styles.itemValue}>
+                  {item.sets?.length ? "계획: " : ""}
                   {item.set}세트 · {item.kg}kg
                 </Text>
+                {item.sets?.length ? (
+                  <Text style={styles.setValues}>
+                    {item.sets
+                      .map((set) => `${set.setNumber}세트 ${set.kg}kg`)
+                      .join(" · ")}
+                  </Text>
+                ) : null}
               </View>
             ))}
           </View>
@@ -158,6 +166,11 @@ const styles = StyleSheet.create({
   itemValue: {
     marginTop: 4,
     color: "#4b5563",
+  },
+  setValues: {
+    marginTop: 4,
+    color: "#2563eb",
+    lineHeight: 20,
   },
   feedback: {
     alignItems: "center",

@@ -32,6 +32,8 @@ export default function Play() {
     defaultTime,
     currentRoutineIndex,
     counts,
+    setWeights,
+    weightError,
     finished,
     totalRoutines,
     isTimerModal,
@@ -40,6 +42,7 @@ export default function Play() {
     recordSaving,
     recordSaveFailed,
     handleCompleteSet,
+    handleSetWeightChange,
     handleStartNextSet,
     handleRetrySaveRecord,
   } = useRoutineRunner();
@@ -66,6 +69,7 @@ export default function Play() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>{routineDetail.title}</Text>
         <Text style={styles.subtitle}>세트 사이 휴식: {defaultTime}초</Text>
@@ -80,7 +84,16 @@ export default function Play() {
               finished={finished}
               currentRoutineIndex={currentRoutineIndex}
               totalRoutines={totalRoutines}
+              currentSetWeight={
+                index === currentRoutineIndex
+                  ? setWeights[index]?.[counts[index] ?? 0]
+                  : undefined
+              }
+              weightError={
+                index === currentRoutineIndex ? weightError : null
+              }
               handleCompleteSet={handleCompleteSet}
+              onChangeSetWeight={handleSetWeightChange}
               onPressVideo={openVideo}
             />
           );

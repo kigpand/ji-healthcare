@@ -1,3 +1,5 @@
+import type { IRoutineData, IRoutineInfo } from "@/interface/routine";
+
 export interface IRecord {
   category: string;
   date: string;
@@ -21,6 +23,14 @@ export interface IRecordSet {
   setNumber: number;
   kg: number;
 }
+
+export interface ICompletedRoutineItem extends IRoutineData {
+  setKgs: number[];
+}
+
+export type ICompletedRoutine = Omit<IRoutineInfo, "routine"> & {
+  routine: ICompletedRoutineItem[];
+};
 
 export interface IRecordDetail extends IRecord {
   items: IRecordItem[];

@@ -7,7 +7,18 @@ const { act } = TestRenderer;
 const mockPush = jest.fn();
 const mockRefetch = jest.fn();
 let mockItems = [
-  { id: 1, title: "스쿼트", kg: 22.5, set: 3, sortOrder: 0 },
+  {
+    id: 1,
+    title: "스쿼트",
+    kg: 22.5,
+    set: 3,
+    sortOrder: 0,
+    sets: [
+      { id: 1, setNumber: 1, kg: 20 },
+      { id: 2, setNumber: 2, kg: 22.5 },
+      { id: 3, setNumber: 3, kg: 25 },
+    ],
+  },
 ];
 
 jest.mock("expo-router", () => ({
@@ -53,7 +64,18 @@ beforeEach(() => {
     screen: { width: 390, height: 844, scale: 3, fontScale: 1 },
   });
   mockItems = [
-    { id: 1, title: "스쿼트", kg: 22.5, set: 3, sortOrder: 0 },
+    {
+      id: 1,
+      title: "스쿼트",
+      kg: 22.5,
+      set: 3,
+      sortOrder: 0,
+      sets: [
+        { id: 1, setNumber: 1, kg: 20 },
+        { id: 2, setNumber: 2, kg: 22.5 },
+        { id: 3, setNumber: 3, kg: 25 },
+      ],
+    },
   ];
 });
 
@@ -70,6 +92,9 @@ test("완료 기록의 운동 항목과 세트·무게를 표시하고 같은 �
 
   expect(textValues(renderer!)).toContain("스쿼트");
   expect(textValues(renderer!).replace(/\s/g, "")).toContain("3세트·22.5kg");
+  expect(textValues(renderer!).replace(/\s/g, "")).toContain(
+    "1세트20kg·2세트22.5kg·3세트25kg"
+  );
 
   const restart = renderer!.root.findAll(
     (node: any) =>
