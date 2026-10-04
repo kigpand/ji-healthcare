@@ -22,6 +22,13 @@ type RecordItemRow = {
   sort_order: number;
 };
 
+type RecordSetRow = {
+  id: number;
+  record_item_id: number;
+  set_number: number;
+  kg: number;
+};
+
 function mapRecord(row: RecordRow): IRecord {
   return {
     _id: row.id.toString(),
@@ -59,6 +66,15 @@ export async function getRecord(days?: number, referenceDate = new Date()) {
 }
 
 export async function addRecord(routine: IRoutineInfo) {
+  routine.routine.forEach((item) => {
+    if (!Number.isInteger(item.set) || item.set <= 0) {
+      throw new Error("완료 운동의 세트 수가 올바르지 않습니다.");
+    }
+    if (!Number.isFinite(item.kg) || item.kg < 0) {
+      throw new Error("완료 운동의 무게가 올바르지 않습니다.");
+    }
+  });
+
   await runInTransaction(async (db) => {
     const record = await db.runAsync(
       `
@@ -73,7 +89,7 @@ export async function addRecord(routine: IRoutineInfo) {
     const recordId = Number(record.lastInsertRowId);
 
     for (const [index, item] of routine.routine.entries()) {
-      await db.runAsync(
+      const recordItem = await db.runAsync(
         `
           INSERT INTO record_items
             (record_id, title, kg, set_count, sort_order)
@@ -84,6 +100,25 @@ export async function addRecord(routine: IRoutineInfo) {
         item.kg,
         item.set,
         index
+      );
+      const recordItemId = Number(recordItem.lastInsertRowId);
+
+      await db.runAsync(
+        `
+          WITH RECURSIVE set_numbers (set_number) AS (
+            SELECT 1
+            UNION ALL
+            SELECT set_number + 1
+            FROM set_numbers
+            WHERE set_number < ?
+          )
+          INSERT INTO record_sets (record_item_id, set_number, kg)
+          SELECT ?, set_number, ?
+          FROM set_numbers
+        `,
+        item.set,
+        recordItemId,
+        item.kg
       );
     }
   });
@@ -124,12 +159,38 @@ export async function getRecordDetail(recordId: string) {
     `,
     numericRecordId
   );
+  const setRows = await db.getAllAsync<RecordSetRow>(
+    `
+      SELECT
+        record_sets.id,
+        record_sets.record_item_id,
+        record_sets.set_number,
+        record_sets.kg
+      FROM record_sets
+      INNER JOIN record_items
+        ON record_items.id = record_sets.record_item_id
+      WHERE record_items.record_id = ?
+      ORDER BY
+        record_items.sort_order ASC,
+        record_items.id ASC,
+        record_sets.set_number ASC
+    `,
+    numericRecordId
+  );
+  const setsByItemId = new Map<number, IRecordItem["sets"]>();
+
+  setRows.forEach((row) => {
+    const sets = setsByItemId.get(row.record_item_id) ?? [];
+    sets.push({ id: row.id, setNumber: row.set_number, kg: row.kg });
+    setsByItemId.set(row.record_item_id, sets);
+  });
   const items: IRecordItem[] = rows.map((row) => ({
     id: row.id,
     title: row.title,
     kg: row.kg,
     set: row.set_count,
     sortOrder: row.sort_order,
+    sets: setsByItemId.get(row.id) ?? [],
   }));
 
   return { ...mapRecord(record), items } satisfies IRecordDetail;

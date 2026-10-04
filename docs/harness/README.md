@@ -32,9 +32,9 @@ CI는 PR 및 push에서 동일한 검사와 모바일 JS 번들 생성을 수행
 
 ## 최근 검증 결과
 
-2026-10-03 로컬 검증: Node 22.17.0에서 린트·타입 검사 통과, Jest 19개 suite / 117개 테스트 통과, Android/iOS JS export 통과.
+2026-10-04 로컬 검증: Node 22.17.0에서 DB v6 마이그레이션을 포함한 린트·타입 검사 통과, Jest 19개 suite / 120개 테스트 통과, Android/iOS JS export 통과.
 
-2026-10-03 iOS Simulator 검증: iOS 26.5의 iPhone 17 Pro에서 Debug 네이티브 빌드·설치·실행에 성공했다. 데이터가 비어 있는 Simulator에 v3 fixture를 준비하고 앱을 재설치하지 않은 채 실행해 v5 업그레이드를 확인했다. 기존 카테고리 1건, 루틴 1건, 운동 항목 2건, 기록 1건, AI 설정을 보존했고, `NULL`과 0이던 세트 수는 1로 보정됐으며 `record_items` 테이블이 생성됐다. `PRAGMA foreign_key_check` 위반은 없었다.
+2026-10-03 iOS Simulator 검증: iOS 26.5의 iPhone 17 Pro에서 Debug 네이티브 빌드·설치·실행에 성공했다. 데이터가 비어 있는 Simulator에 v3 fixture를 준비하고 앱을 재설치하지 않은 채 실행해 v5까지의 업그레이드를 확인했다. 기존 카테고리 1건, 루틴 1건, 운동 항목 2건, 기록 1건, AI 설정을 보존했고, `NULL`과 0이던 세트 수는 1로 보정됐으며 `record_items` 테이블이 생성됐다. `PRAGMA foreign_key_check` 위반은 없었다. v6 네이티브 마이그레이션은 아직 Simulator에서 검증하지 않았다.
 
 개발 클라이언트 최초 안내로 화면 자동 조작이 제한되어 운동 완료 저장, 접근성 글꼴, 알림, 백그라운드 복귀 시나리오는 이번 실행에서 확인하지 못했다. GitHub CI, EAS 네이티브 빌드, 실제 기기 검증은 별도 실행 결과로 관리한다.
 

@@ -13,6 +13,13 @@ export interface IRecordItem {
   kg: number;
   set: number;
   sortOrder: number;
+  sets: IRecordSet[];
+}
+
+export interface IRecordSet {
+  id: number;
+  setNumber: number;
+  kg: number;
 }
 
 export interface IRecordDetail extends IRecord {

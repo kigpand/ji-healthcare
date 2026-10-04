@@ -2,11 +2,72 @@ import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 
 const DATABASE_NAME = "ji-healthcare.db";
-const LATEST_SCHEMA_VERSION = 5;
+const LATEST_SCHEMA_VERSION = 6;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const migrations: Record<number, string> = {
+  6: `
+    UPDATE routine_items
+    SET set_count =
+      CAST(set_count AS INTEGER) +
+      (set_count > CAST(set_count AS INTEGER))
+    WHERE set_count > 0
+      AND set_count != CAST(set_count AS INTEGER);
+
+    UPDATE routine_items
+    SET kg = 0
+    WHERE kg IS NOT NULL
+      AND (
+        typeof(kg) NOT IN ('integer', 'real')
+        OR kg < 0
+        OR kg > 1.7976931348623157e308
+      );
+
+    UPDATE record_items
+    SET set_count =
+      CAST(set_count AS INTEGER) +
+      (set_count > CAST(set_count AS INTEGER))
+    WHERE set_count > 0
+      AND set_count != CAST(set_count AS INTEGER);
+
+    UPDATE record_items
+    SET kg = 0
+    WHERE typeof(kg) NOT IN ('integer', 'real')
+      OR kg < 0
+      OR kg > 1.7976931348623157e308;
+
+    CREATE TABLE IF NOT EXISTS record_sets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_item_id INTEGER NOT NULL,
+      set_number INTEGER NOT NULL
+        CHECK (typeof(set_number) = 'integer' AND set_number > 0),
+      kg REAL NOT NULL CHECK (
+        typeof(kg) IN ('integer', 'real')
+        AND kg >= 0
+        AND kg <= 1.7976931348623157e308
+      ),
+      FOREIGN KEY (record_item_id) REFERENCES record_items(id) ON DELETE CASCADE,
+      UNIQUE (record_item_id, set_number)
+    );
+
+    WITH RECURSIVE completed_sets (
+      record_item_id,
+      set_number,
+      kg,
+      set_count
+    ) AS (
+      SELECT id, 1, kg, set_count
+      FROM record_items
+      UNION ALL
+      SELECT record_item_id, set_number + 1, kg, set_count
+      FROM completed_sets
+      WHERE set_number < set_count
+    )
+    INSERT OR IGNORE INTO record_sets (record_item_id, set_number, kg)
+    SELECT record_item_id, set_number, kg
+    FROM completed_sets;
+  `,
   5: `
     UPDATE routine_items
     SET set_count = 1

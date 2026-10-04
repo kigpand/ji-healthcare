@@ -100,7 +100,7 @@ test("v3 기록을 보존하며 v4 상세 기록 테이블을 추가한다", asy
 
   await initializeDatabase();
 
-  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(5);
+  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(6);
   await expect(getRecordDetail("1")).resolves.toMatchObject({
     id: 1,
     title: "이전 기록",
@@ -117,6 +117,13 @@ test("기존 루틴의 비어 있는 세트 수를 보정해 완료 기록을 �
        VALUES (1, '런지', 10, 0, 1)`
     )
     .run();
+  sqlite
+    .prepare(
+      `INSERT INTO routine_items
+        (routine_id, title, kg, set_count, sort_order)
+       VALUES (1, '레그 프레스', '잘못된 무게', 1.5, 2)`
+    )
+    .run();
   const { initializeDatabase } = require("@/lib/database");
   const { getRoutineDetail } = require("@/service/routineService");
   const { addRecord, getRecordDetail } = require("@/service/recordService");
@@ -126,13 +133,22 @@ test("기존 루틴의 비어 있는 세트 수를 보정해 완료 기록을 �
   const routine = await getRoutineDetail("1");
   expect(
     routine.routine.map((item: { set: number }) => item.set)
-  ).toEqual([1, 1]);
+  ).toEqual([1, 1, 2]);
 
   await addRecord(routine);
   await expect(getRecordDetail("2")).resolves.toMatchObject({
     items: [
       { title: "스쿼트", kg: 20, set: 1 },
       { title: "런지", kg: 10, set: 1 },
+      {
+        title: "레그 프레스",
+        kg: 0,
+        set: 2,
+        sets: [
+          { setNumber: 1, kg: 0 },
+          { setNumber: 2, kg: 0 },
+        ],
+      },
     ],
   });
 });
@@ -160,8 +176,70 @@ test("운동 완료 시 항목을 저장해 이후 루틴 변경과 관계없이
     title: "하체 루틴",
     category: "하체",
     items: [
-      { title: "스쿼트", kg: 22.5, set: 3, sortOrder: 0 },
-      { title: "런지", kg: 10, set: 2, sortOrder: 1 },
+      {
+        title: "스쿼트",
+        kg: 22.5,
+        set: 3,
+        sortOrder: 0,
+        sets: [
+          { setNumber: 1, kg: 22.5 },
+          { setNumber: 2, kg: 22.5 },
+          { setNumber: 3, kg: 22.5 },
+        ],
+      },
+      {
+        title: "런지",
+        kg: 10,
+        set: 2,
+        sortOrder: 1,
+        sets: [
+          { setNumber: 1, kg: 10 },
+          { setNumber: 2, kg: 10 },
+        ],
+      },
+    ],
+  });
+});
+
+test("v5 완료 기록의 분수형 세트 수를 올림하고 세트별 스냅샷으로 보존한다", async () => {
+  sqlite.exec(`
+    CREATE TABLE record_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      kg REAL NOT NULL CHECK (kg >= 0),
+      set_count INTEGER NOT NULL CHECK (set_count > 0),
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+    INSERT INTO record_items
+      (id, record_id, title, kg, set_count, sort_order)
+      VALUES (1, 1, '스쿼트', 20, 1.5, 0);
+    INSERT INTO record_items
+      (id, record_id, title, kg, set_count, sort_order)
+      VALUES (2, 1, '레거시 운동', '잘못된 무게', 1, 1);
+    PRAGMA user_version = 5;
+  `);
+  const { initializeDatabase } = require("@/lib/database");
+  const { getRecordDetail } = require("@/service/recordService");
+
+  await initializeDatabase();
+
+  expect(sqlite.prepare("PRAGMA user_version").get().user_version).toBe(6);
+  await expect(getRecordDetail("1")).resolves.toMatchObject({
+    items: [
+      {
+        title: "스쿼트",
+        set: 2,
+        sets: [
+          { setNumber: 1, kg: 20 },
+          { setNumber: 2, kg: 20 },
+        ],
+      },
+      {
+        title: "레거시 운동",
+        kg: 0,
+        sets: [{ setNumber: 1, kg: 0 }],
+      },
     ],
   });
 });
@@ -192,6 +270,55 @@ test("상세 항목 저장 실패 시 기록 본문도 함께 롤백한다", asy
   expect(
     sqlite.prepare("SELECT COUNT(*) AS count FROM records").get().count
   ).toBe(1);
+});
+
+test("분수형 세트 수인 완료 운동은 저장 전에 거부한다", async () => {
+  const { addRecord } = require("@/service/recordService");
+
+  await expect(
+    addRecord({
+      id: 1,
+      title: "하체 루틴",
+      categoryId: 1,
+      category: "하체",
+      createdAt: "2026-09-01T00:00:00.000Z",
+      routine: [{ title: "스쿼트", kg: 20, set: 1.5 }],
+    })
+  ).rejects.toThrow("완료 운동의 세트 수가 올바르지 않습니다.");
+
+  expect(sqlite.prepare("SELECT COUNT(*) AS count FROM records").get().count).toBe(1);
+});
+
+test("세트별 무게 스냅샷 저장 실패 시 완료 기록 전체를 롤백한다", async () => {
+  const originalRun = mockDatabase.runAsync.getMockImplementation()!;
+  mockDatabase.runAsync.mockImplementation(
+    async (sql: string, ...params: (string | number | null)[]) => {
+      if (sql.includes("INSERT INTO record_sets")) {
+        throw new Error("세트 저장 실패");
+      }
+      return originalRun(sql, ...params);
+    }
+  );
+  const { addRecord } = require("@/service/recordService");
+
+  await expect(
+    addRecord({
+      id: 1,
+      title: "하체 루틴",
+      categoryId: 1,
+      category: "하체",
+      createdAt: "2026-09-01T00:00:00.000Z",
+      routine: [{ title: "스쿼트", kg: 20, set: 3 }],
+    })
+  ).rejects.toThrow("세트 저장 실패");
+
+  expect(sqlite.prepare("SELECT COUNT(*) AS count FROM records").get().count).toBe(1);
+  expect(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM record_items").get().count
+  ).toBe(0);
+  expect(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM record_sets").get().count
+  ).toBe(0);
 });
 
 test.each(["", "0", "-1", "1.5", "abc"])(
