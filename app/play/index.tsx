@@ -33,7 +33,9 @@ export default function Play() {
     currentRoutineIndex,
     counts,
     setWeights,
+    setReps,
     weightError,
+    repsError,
     finished,
     totalRoutines,
     isTimerModal,
@@ -43,6 +45,7 @@ export default function Play() {
     recordSaveFailed,
     handleCompleteSet,
     handleSetWeightChange,
+    handleSetRepsChange,
     handleStartNextSet,
     handleRetrySaveRecord,
   } = useRoutineRunner();
@@ -89,11 +92,18 @@ export default function Play() {
                   ? setWeights[index]?.[counts[index] ?? 0]
                   : undefined
               }
+              currentSetReps={
+                index === currentRoutineIndex
+                  ? setReps[index]?.[counts[index] ?? 0]
+                  : undefined
+              }
               weightError={
                 index === currentRoutineIndex ? weightError : null
               }
+              repsError={index === currentRoutineIndex ? repsError : null}
               handleCompleteSet={handleCompleteSet}
               onChangeSetWeight={handleSetWeightChange}
+              onChangeSetReps={handleSetRepsChange}
               onPressVideo={openVideo}
             />
           );

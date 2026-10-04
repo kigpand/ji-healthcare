@@ -9,9 +9,12 @@ type Props = {
   currentRoutineIndex: number;
   totalRoutines: number;
   currentSetWeight?: string;
+  currentSetReps?: string;
   weightError?: string | null;
+  repsError?: string | null;
   handleCompleteSet: () => void;
   onChangeSetWeight?: (value: string) => void;
+  onChangeSetReps?: (value: string) => void;
   onPressVideo?: (link: string) => void;
 };
 
@@ -23,9 +26,12 @@ export default function PlayCard({
   currentRoutineIndex,
   totalRoutines,
   currentSetWeight,
+  currentSetReps,
   weightError,
+  repsError,
   handleCompleteSet,
   onChangeSetWeight,
+  onChangeSetReps,
   onPressVideo,
 }: Props) {
   const count = counts[index] ?? 0;
@@ -75,6 +81,22 @@ export default function PlayCard({
           </View>
           {weightError ? (
             <Text style={styles.weightError}>{weightError}</Text>
+          ) : null}
+          <Text style={styles.weightLabel}>반복 횟수 (선택)</Text>
+          <View style={styles.weightInputRow}>
+            <TextInput
+              accessibilityLabel={`${routine.title} ${count + 1}세트 반복 횟수`}
+              style={[styles.weightInput, repsError && styles.weightInputError]}
+              value={currentSetReps ?? ""}
+              onChangeText={onChangeSetReps}
+              keyboardType="number-pad"
+              placeholder="예: 10"
+              selectTextOnFocus
+            />
+            <Text style={styles.weightUnit}>회</Text>
+          </View>
+          {repsError ? (
+            <Text style={styles.weightError}>{repsError}</Text>
           ) : null}
         </View>
       ) : null}

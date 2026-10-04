@@ -48,9 +48,10 @@ afterEach(() => {
   });
 });
 
-test("세트별로 수정한 무게를 운동 완료 기록에 전달한다", async () => {
+test("세트별로 수정한 무게와 선택 입력한 반복 횟수를 완료 기록에 전달한다", async () => {
   act(() => {
     model.handleSetWeightChange("22.5");
+    model.handleSetRepsChange("12");
   });
   act(() => {
     model.handleCompleteSet();
@@ -62,6 +63,7 @@ test("세트별로 수정한 무게를 운동 완료 기록에 전달한다", as
 
   await act(async () => {
     model.handleSetWeightChange("25");
+    model.handleSetRepsChange("8");
   });
   await act(async () => {
     model.handleCompleteSet();
@@ -73,6 +75,7 @@ test("세트별로 수정한 무게를 운동 완료 기록에 전달한다", as
     kg: 20,
     set: 2,
     setKgs: [22.5, 25],
+    setReps: [12, 8],
   });
 });
 
@@ -88,4 +91,37 @@ test("빈 무게로는 현재 세트를 완료하지 않는다", () => {
   expect(model.isTimerModal).toBe(false);
   expect(model.weightError).toBe("0 이상의 올바른 무게를 입력해주세요.");
   expect(mockSave).not.toHaveBeenCalled();
+});
+
+test("반복 횟수를 비우면 기록을 허용하고 잘못 입력하면 세트를 완료하지 않는다", () => {
+  act(() => {
+    model.handleSetRepsChange("1.5");
+  });
+  act(() => {
+    model.handleCompleteSet();
+  });
+  expect(model.counts).toEqual([0]);
+  expect(model.isTimerModal).toBe(false);
+  expect(model.repsError).toBe("반복 횟수는 1 이상의 정수로 입력해주세요.");
+
+  act(() => {
+    model.handleSetRepsChange("");
+  });
+  act(() => {
+    model.handleCompleteSet();
+  });
+  expect(model.isTimerModal).toBe(true);
+});
+
+test("안전한 정수 범위를 벗어난 반복 횟수로는 세트를 완료하지 않는다", () => {
+  act(() => {
+    model.handleSetRepsChange("9007199254740993");
+  });
+  act(() => {
+    model.handleCompleteSet();
+  });
+
+  expect(model.counts).toEqual([0]);
+  expect(model.isTimerModal).toBe(false);
+  expect(model.repsError).toBe("반복 횟수는 1 이상의 정수로 입력해주세요.");
 });

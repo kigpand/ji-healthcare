@@ -2,11 +2,18 @@ import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 
 const DATABASE_NAME = "ji-healthcare.db";
-const LATEST_SCHEMA_VERSION = 6;
+const LATEST_SCHEMA_VERSION = 7;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const migrations: Record<number, string> = {
+  7: `
+    ALTER TABLE record_sets
+      ADD COLUMN reps INTEGER CHECK (
+        reps IS NULL
+        OR (typeof(reps) = 'integer' AND reps > 0)
+      );
+  `,
   6: `
     UPDATE routine_items
     SET set_count =

@@ -120,8 +120,13 @@ export default function RecordCardModal({
                 {item.sets?.length ? (
                   <Text style={styles.setValues}>
                     {item.sets
-                      .map((set) => `${set.setNumber}세트 ${set.kg}kg`)
-                      .join(" · ")}
+                      .map(
+                        (set) =>
+                          `${set.setNumber}세트 ${set.kg}kg${
+                            set.reps === null ? "" : ` · ${set.reps}회`
+                          }`
+                      )
+                      .join(" / ")}
                   </Text>
                 ) : null}
               </View>

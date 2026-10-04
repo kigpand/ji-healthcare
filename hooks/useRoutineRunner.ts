@@ -13,7 +13,9 @@ type RoutineRunnerState = {
   currentRoutineIndex: number;
   counts: number[];
   setWeights: string[][];
+  setReps: string[][];
   weightError: string | null;
+  repsError: string | null;
   isTimerModal: boolean;
   countdown: number;
   isTimerRunning: boolean;
@@ -27,7 +29,12 @@ type RoutineRunnerState = {
 type RoutineRunnerAction =
   | {
       type: "RESET";
-      payload: { countdown: number; counts: number[]; setWeights: string[][] };
+      payload: {
+        countdown: number;
+        counts: number[];
+        setWeights: string[][];
+        setReps: string[][];
+      };
     }
   | { type: "OPEN_TIMER"; payload: { countdown: number; endsAt: number } }
   | { type: "CLOSE_TIMER"; payload: { countdown: number } }
@@ -38,6 +45,11 @@ type RoutineRunnerAction =
       payload: { routineIndex: number; setIndex: number; value: string };
     }
   | { type: "SET_WEIGHT_ERROR"; payload: string | null }
+  | {
+      type: "UPDATE_SET_REPS";
+      payload: { routineIndex: number; setIndex: number; value: string };
+    }
+  | { type: "SET_REPS_ERROR"; payload: string | null }
   | { type: "MOVE_NEXT_ROUTINE" }
   | { type: "FINISH" }
   | { type: "SET_RECORD_ADDED"; payload: boolean }
@@ -51,7 +63,9 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         currentRoutineIndex: 0,
         counts: action.payload.counts,
         setWeights: action.payload.setWeights,
+        setReps: action.payload.setReps,
         weightError: null,
+        repsError: null,
         isTimerModal: false,
         countdown: action.payload.countdown,
         isTimerRunning: false,
@@ -108,6 +122,22 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
       };
     case "SET_WEIGHT_ERROR":
       return { ...state, weightError: action.payload };
+    case "UPDATE_SET_REPS":
+      return {
+        ...state,
+        setReps: state.setReps.map((reps, routineIndex) =>
+          routineIndex === action.payload.routineIndex
+            ? reps.map((value, setIndex) =>
+                setIndex === action.payload.setIndex
+                  ? action.payload.value
+                  : value
+              )
+            : reps
+        ),
+        repsError: null,
+      };
+    case "SET_REPS_ERROR":
+      return { ...state, repsError: action.payload };
     case "MOVE_NEXT_ROUTINE":
       return {
         ...state,
@@ -142,7 +172,9 @@ const initialRunnerState: RoutineRunnerState = {
   currentRoutineIndex: 0,
   counts: [],
   setWeights: [],
+  setReps: [],
   weightError: null,
+  repsError: null,
   isTimerModal: false,
   countdown: 60,
   isTimerRunning: false,
@@ -176,7 +208,9 @@ export function useRoutineRunner() {
     currentRoutineIndex,
     counts,
     setWeights,
+    setReps,
     weightError,
+    repsError,
     isTimerModal,
     countdown,
     isTimerRunning,
@@ -201,6 +235,9 @@ export function useRoutineRunner() {
           counts: routineDetail.routine.map(() => 0),
           setWeights: routineDetail.routine.map((item) =>
             Array.from({ length: item.set }, () => item.kg.toString())
+          ),
+          setReps: routineDetail.routine.map((item) =>
+            Array.from({ length: item.set }, () => "")
           ),
           countdown: defaultTime,
         },
@@ -256,6 +293,21 @@ export function useRoutineRunner() {
     }, [counts, currentExercise, currentRoutineIndex, finished]
   );
 
+  const handleSetRepsChange = useCallback(
+    (value: string) => {
+      if (!currentExercise || finished) return;
+
+      dispatch({
+        type: "UPDATE_SET_REPS",
+        payload: {
+          routineIndex: currentRoutineIndex,
+          setIndex: counts[currentRoutineIndex] ?? 0,
+          value,
+        },
+      });
+    }, [counts, currentExercise, currentRoutineIndex, finished]
+  );
+
   const handleCompleteSet = () => {
     if (!currentExercise || finished) {
       return;
@@ -273,6 +325,19 @@ export function useRoutineRunner() {
       dispatch({
         type: "SET_WEIGHT_ERROR",
         payload: "0 이상의 올바른 무게를 입력해주세요.",
+      });
+      return;
+    }
+
+    const currentRepsText = setReps[currentRoutineIndex]?.[currentCount] ?? "";
+    const currentReps = Number(currentRepsText);
+    if (
+      currentRepsText.trim() &&
+      (!Number.isSafeInteger(currentReps) || currentReps <= 0)
+    ) {
+      dispatch({
+        type: "SET_REPS_ERROR",
+        payload: "반복 횟수는 1 이상의 정수로 입력해주세요.",
       });
       return;
     }
@@ -353,9 +418,12 @@ export function useRoutineRunner() {
       routine: routineDetail.routine.map((item, index) => ({
         ...item,
         setKgs: (setWeights[index] ?? []).map(Number),
+        setReps: (setReps[index] ?? []).map((reps) =>
+          reps.trim() ? Number(reps) : null
+        ),
       })),
     };
-  }, [routineDetail, setWeights]);
+  }, [routineDetail, setReps, setWeights]);
 
   useEffect(() => {
     if (
@@ -435,7 +503,9 @@ export function useRoutineRunner() {
     currentRoutineIndex,
     counts,
     setWeights,
+    setReps,
     weightError,
+    repsError,
     finished,
     totalRoutines,
     isTimerModal,
@@ -445,6 +515,7 @@ export function useRoutineRunner() {
     recordSaveFailed,
     handleCompleteSet,
     handleSetWeightChange,
+    handleSetRepsChange,
     handleStartNextSet,
     handleRetrySaveRecord,
   };

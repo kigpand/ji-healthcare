@@ -14,9 +14,9 @@ let mockItems = [
     set: 3,
     sortOrder: 0,
     sets: [
-      { id: 1, setNumber: 1, kg: 20 },
-      { id: 2, setNumber: 2, kg: 22.5 },
-      { id: 3, setNumber: 3, kg: 25 },
+      { id: 1, setNumber: 1, kg: 20, reps: 12 },
+      { id: 2, setNumber: 2, kg: 22.5, reps: 10 },
+      { id: 3, setNumber: 3, kg: 25, reps: null },
     ],
   },
 ];
@@ -71,9 +71,9 @@ beforeEach(() => {
       set: 3,
       sortOrder: 0,
       sets: [
-        { id: 1, setNumber: 1, kg: 20 },
-        { id: 2, setNumber: 2, kg: 22.5 },
-        { id: 3, setNumber: 3, kg: 25 },
+        { id: 1, setNumber: 1, kg: 20, reps: 12 },
+        { id: 2, setNumber: 2, kg: 22.5, reps: 10 },
+        { id: 3, setNumber: 3, kg: 25, reps: null },
       ],
     },
   ];
@@ -93,7 +93,7 @@ test("완료 기록의 운동 항목과 세트·무게를 표시하고 같은 �
   expect(textValues(renderer!)).toContain("스쿼트");
   expect(textValues(renderer!).replace(/\s/g, "")).toContain("3세트·22.5kg");
   expect(textValues(renderer!).replace(/\s/g, "")).toContain(
-    "1세트20kg·2세트22.5kg·3세트25kg"
+    "1세트20kg·12회/2세트22.5kg·10회/3세트25kg"
   );
 
   const restart = renderer!.root.findAll(

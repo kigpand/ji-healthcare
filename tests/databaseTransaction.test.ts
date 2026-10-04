@@ -1,6 +1,6 @@
 const events: string[] = [];
 const mockOpenDatabaseAsync = jest.fn();
-let mockUserVersion = 6;
+let mockUserVersion = 7;
 
 const transactionDatabase = {
   execAsync: jest.fn(async (sql: string) => {
@@ -26,7 +26,7 @@ jest.mock("expo-sqlite", () => ({ openDatabaseAsync: mockOpenDatabaseAsync }));
 beforeEach(() => {
   jest.resetModules();
   events.length = 0;
-  mockUserVersion = 6;
+  mockUserVersion = 7;
   mockOpenDatabaseAsync.mockReset();
   mockOpenDatabaseAsync
     .mockResolvedValueOnce(mainDatabase)
@@ -135,12 +135,12 @@ test("네이티브 초기화의 모든 마이그레이션을 외래 키 연결�
 
   await initializeDatabase();
 
-  expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(7);
-  expect(events.filter((event) => event === "PRAGMA foreign_keys = ON")).toHaveLength(6);
-  expect(events.filter((event) => event === "BEGIN IMMEDIATE TRANSACTION")).toHaveLength(6);
-  expect(events.filter((event) => event === "COMMIT")).toHaveLength(6);
-  expect(events.filter((event) => event === "CLOSE")).toHaveLength(6);
-  for (let version = 1; version <= 6; version += 1) {
+  expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(8);
+  expect(events.filter((event) => event === "PRAGMA foreign_keys = ON")).toHaveLength(7);
+  expect(events.filter((event) => event === "BEGIN IMMEDIATE TRANSACTION")).toHaveLength(7);
+  expect(events.filter((event) => event === "COMMIT")).toHaveLength(7);
+  expect(events.filter((event) => event === "CLOSE")).toHaveLength(7);
+  for (let version = 1; version <= 7; version += 1) {
     expect(events).toContain(`PRAGMA user_version = ${version}`);
   }
 });

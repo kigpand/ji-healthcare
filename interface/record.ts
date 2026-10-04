@@ -22,10 +22,12 @@ export interface IRecordSet {
   id: number;
   setNumber: number;
   kg: number;
+  reps: number | null;
 }
 
 export interface ICompletedRoutineItem extends IRoutineData {
   setKgs: number[];
+  setReps: (number | null)[];
 }
 
 export type ICompletedRoutine = Omit<IRoutineInfo, "routine"> & {

@@ -31,6 +31,7 @@ type RecordSetRow = {
   record_item_id: number;
   set_number: number;
   kg: number;
+  reps: number | null;
 };
 
 function mapRecord(row: RecordRow): IRecord {
@@ -83,6 +84,14 @@ export async function addRecord(routine: ICompletedRoutine) {
     ) {
       throw new Error("완료 운동의 세트별 무게가 올바르지 않습니다.");
     }
+    if (
+      item.setReps.length !== item.set ||
+      item.setReps.some(
+        (reps) => reps !== null && (!Number.isSafeInteger(reps) || reps <= 0)
+      )
+    ) {
+      throw new Error("완료 운동의 세트별 반복 횟수가 올바르지 않습니다.");
+    }
   });
 
   await runInTransaction(async (db) => {
@@ -113,19 +122,20 @@ export async function addRecord(routine: ICompletedRoutine) {
       );
       const recordItemId = Number(recordItem.lastInsertRowId);
 
-      const setValues = item.setKgs.map(() => "(?, ?)").join(", ");
+      const setValues = item.setKgs.map(() => "(?, ?, ?)").join(", ");
       const setParams = item.setKgs.flatMap((kg, setIndex) => [
         setIndex + 1,
         kg,
+        item.setReps[setIndex],
       ]);
 
       await db.runAsync(
         `
-          WITH completed_sets(set_number, kg) AS (
+          WITH completed_sets(set_number, kg, reps) AS (
             VALUES ${setValues}
           )
-          INSERT INTO record_sets (record_item_id, set_number, kg)
-          SELECT ?, set_number, kg
+          INSERT INTO record_sets (record_item_id, set_number, kg, reps)
+          SELECT ?, set_number, kg, reps
           FROM completed_sets
         `,
         ...setParams,
@@ -176,7 +186,8 @@ export async function getRecordDetail(recordId: string) {
         record_sets.id,
         record_sets.record_item_id,
         record_sets.set_number,
-        record_sets.kg
+        record_sets.kg,
+        record_sets.reps
       FROM record_sets
       INNER JOIN record_items
         ON record_items.id = record_sets.record_item_id
@@ -192,7 +203,12 @@ export async function getRecordDetail(recordId: string) {
 
   setRows.forEach((row) => {
     const sets = setsByItemId.get(row.record_item_id) ?? [];
-    sets.push({ id: row.id, setNumber: row.set_number, kg: row.kg });
+    sets.push({
+      id: row.id,
+      setNumber: row.set_number,
+      kg: row.kg,
+      reps: row.reps,
+    });
     setsByItemId.set(row.record_item_id, sets);
   });
   const items: IRecordItem[] = rows.map((row) => ({
