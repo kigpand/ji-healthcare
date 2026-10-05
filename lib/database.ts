@@ -2,11 +2,98 @@ import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 
 const DATABASE_NAME = "ji-healthcare.db";
-const LATEST_SCHEMA_VERSION = 3;
+const LATEST_SCHEMA_VERSION = 7;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const migrations: Record<number, string> = {
+  7: `
+    ALTER TABLE record_sets
+      ADD COLUMN reps INTEGER CHECK (
+        reps IS NULL
+        OR (typeof(reps) = 'integer' AND reps > 0)
+      );
+  `,
+  6: `
+    UPDATE routine_items
+    SET set_count =
+      CAST(set_count AS INTEGER) +
+      (set_count > CAST(set_count AS INTEGER))
+    WHERE set_count > 0
+      AND set_count != CAST(set_count AS INTEGER);
+
+    UPDATE routine_items
+    SET kg = 0
+    WHERE kg IS NOT NULL
+      AND (
+        typeof(kg) NOT IN ('integer', 'real')
+        OR kg < 0
+        OR kg > 1.7976931348623157e308
+      );
+
+    UPDATE record_items
+    SET set_count =
+      CAST(set_count AS INTEGER) +
+      (set_count > CAST(set_count AS INTEGER))
+    WHERE set_count > 0
+      AND set_count != CAST(set_count AS INTEGER);
+
+    UPDATE record_items
+    SET kg = 0
+    WHERE typeof(kg) NOT IN ('integer', 'real')
+      OR kg < 0
+      OR kg > 1.7976931348623157e308;
+
+    CREATE TABLE IF NOT EXISTS record_sets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_item_id INTEGER NOT NULL,
+      set_number INTEGER NOT NULL
+        CHECK (typeof(set_number) = 'integer' AND set_number > 0),
+      kg REAL NOT NULL CHECK (
+        typeof(kg) IN ('integer', 'real')
+        AND kg >= 0
+        AND kg <= 1.7976931348623157e308
+      ),
+      FOREIGN KEY (record_item_id) REFERENCES record_items(id) ON DELETE CASCADE,
+      UNIQUE (record_item_id, set_number)
+    );
+
+    WITH RECURSIVE completed_sets (
+      record_item_id,
+      set_number,
+      kg,
+      set_count
+    ) AS (
+      SELECT id, 1, kg, set_count
+      FROM record_items
+      UNION ALL
+      SELECT record_item_id, set_number + 1, kg, set_count
+      FROM completed_sets
+      WHERE set_number < set_count
+    )
+    INSERT OR IGNORE INTO record_sets (record_item_id, set_number, kg)
+    SELECT record_item_id, set_number, kg
+    FROM completed_sets;
+  `,
+  5: `
+    UPDATE routine_items
+    SET set_count = 1
+    WHERE set_count IS NULL OR set_count <= 0;
+  `,
+  4: `
+    CREATE TABLE IF NOT EXISTS record_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      kg REAL NOT NULL CHECK (kg >= 0),
+      set_count INTEGER NOT NULL CHECK (set_count > 0),
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_record_items_record_id
+      ON record_items (record_id, sort_order);
+  `,
   3: `
     ALTER TABLE categories
       ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0 CHECK (is_archived IN (0, 1));
@@ -98,13 +185,37 @@ async function executeTransaction<T>(
     }
   }
 
-  let result: T | undefined;
-
-  await database.withExclusiveTransactionAsync(async (transaction) => {
-    result = await operation(transaction);
+  const transaction = await SQLite.openDatabaseAsync(DATABASE_NAME, {
+    useNewConnection: true,
   });
+  let transactionStarted = false;
 
-  return result as T;
+  try {
+    await transaction.execAsync("PRAGMA foreign_keys = ON");
+    await transaction.execAsync("BEGIN IMMEDIATE TRANSACTION");
+    transactionStarted = true;
+
+    const result = await operation(transaction);
+    await transaction.execAsync("COMMIT");
+    transactionStarted = false;
+    return result;
+  } catch (error) {
+    if (transactionStarted) {
+      try {
+        await transaction.execAsync("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Failed to rollback SQLite transaction", rollbackError);
+      }
+    }
+
+    throw error;
+  } finally {
+    try {
+      await transaction.closeAsync();
+    } catch (closeError) {
+      console.error("Failed to close SQLite transaction", closeError);
+    }
+  }
 }
 
 async function applyMigrations(database: SQLite.SQLiteDatabase) {

@@ -1,5 +1,5 @@
 import type { IRoutineData } from "@/interface/routine";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 type Props = {
   index: number;
@@ -8,7 +8,18 @@ type Props = {
   finished: boolean;
   currentRoutineIndex: number;
   totalRoutines: number;
+  setCount: number;
+  currentSetWeight?: string;
+  currentSetReps?: string;
+  weightError?: string | null;
+  repsError?: string | null;
   handleCompleteSet: () => void;
+  onChangeSetWeight?: (value: string) => void;
+  onChangeSetReps?: (value: string) => void;
+  onAddSet?: () => void;
+  onRemoveSet?: () => void;
+  canUndoSet?: boolean;
+  onUndoSet?: () => void;
   onPressVideo?: (link: string) => void;
 };
 
@@ -19,14 +30,26 @@ export default function PlayCard({
   finished,
   currentRoutineIndex,
   totalRoutines,
+  setCount,
+  currentSetWeight,
+  currentSetReps,
+  weightError,
+  repsError,
   handleCompleteSet,
+  onChangeSetWeight,
+  onChangeSetReps,
+  onAddSet,
+  onRemoveSet,
+  canUndoSet = false,
+  onUndoSet,
   onPressVideo,
 }: Props) {
   const count = counts[index] ?? 0;
   const isActive = index === currentRoutineIndex;
-  const isCompleted = count >= routine.set;
+  const isCompleted = count >= setCount;
   const isLastExercise = index === totalRoutines - 1;
   const isFinalSet = isActive && isCompleted && isLastExercise;
+  const canRemoveSet = setCount > count + 1;
 
   return (
     <View
@@ -40,7 +63,7 @@ export default function PlayCard({
         {index + 1}. {routine.title}
       </Text>
       <Text style={styles.exerciseDetail}>
-        {routine.set}세트 · {routine.kg}kg
+        {setCount}세트 · {routine.kg}kg
       </Text>
       {routine.link ? (
         <Pressable
@@ -51,8 +74,73 @@ export default function PlayCard({
         </Pressable>
       ) : null}
       <Text style={styles.countText}>
-        진행: {count}/{routine.set}
+        진행: {count}/{setCount}
       </Text>
+      {isActive && !isCompleted && !finished ? (
+        <View style={styles.weightField}>
+          <Text style={styles.weightLabel}>{count + 1}세트 무게</Text>
+          <View style={styles.weightInputRow}>
+            <TextInput
+              accessibilityLabel={`${routine.title} ${count + 1}세트 무게`}
+              style={[styles.weightInput, weightError && styles.weightInputError]}
+              value={currentSetWeight ?? ""}
+              onChangeText={onChangeSetWeight}
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
+            <Text style={styles.weightUnit}>kg</Text>
+          </View>
+          {weightError ? (
+            <Text style={styles.weightError}>{weightError}</Text>
+          ) : null}
+          <Text style={styles.weightLabel}>반복 횟수 (선택)</Text>
+          <View style={styles.weightInputRow}>
+            <TextInput
+              accessibilityLabel={`${routine.title} ${count + 1}세트 반복 횟수`}
+              style={[styles.weightInput, repsError && styles.weightInputError]}
+              value={currentSetReps ?? ""}
+              onChangeText={onChangeSetReps}
+              keyboardType="number-pad"
+              placeholder="예: 10"
+              selectTextOnFocus
+            />
+            <Text style={styles.weightUnit}>회</Text>
+          </View>
+          {repsError ? (
+            <Text style={styles.weightError}>{repsError}</Text>
+          ) : null}
+          <View style={styles.setActions}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.setActionButton}
+              onPress={onAddSet}
+            >
+              <Text style={styles.setActionText}>세트 추가</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.setActionButton,
+                !canRemoveSet && styles.setActionDisabled,
+              ]}
+              onPress={onRemoveSet}
+              disabled={!canRemoveSet}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canRemoveSet }}
+            >
+              <Text style={styles.setActionText}>마지막 세트 삭제</Text>
+            </Pressable>
+            {canUndoSet ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.setActionButton}
+                onPress={onUndoSet}
+              >
+                <Text style={styles.setActionText}>이전 세트 완료 취소</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
       {isFinalSet && finished && (
         <Text style={styles.finishText}>운동 끝!</Text>
       )}
@@ -106,6 +194,57 @@ const styles = StyleSheet.create({
   countText: {
     marginTop: 8,
     fontSize: 16,
+    fontWeight: "600",
+  },
+  weightField: {
+    marginTop: 12,
+    gap: 6,
+  },
+  weightLabel: {
+    color: "#374151",
+    fontWeight: "600",
+  },
+  weightInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  weightInput: {
+    minWidth: 100,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  weightInputError: {
+    borderColor: "#dc2626",
+  },
+  weightUnit: {
+    color: "#4b5563",
+  },
+  weightError: {
+    color: "#dc2626",
+  },
+  setActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  setActionButton: {
+    borderWidth: 1,
+    borderColor: "#2563eb",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  setActionDisabled: {
+    opacity: 0.4,
+  },
+  setActionText: {
+    color: "#2563eb",
     fontWeight: "600",
   },
   finishText: {

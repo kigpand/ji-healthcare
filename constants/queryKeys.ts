@@ -3,4 +3,5 @@ export const QUERY_KEY = {
   ROUTINE: "routine",
   ROUTINE_DETAIL: "routineDetail",
   RECORD: "record",
+  RECORD_DETAIL: "recordDetail",
 } as const;

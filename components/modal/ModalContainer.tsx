@@ -7,6 +7,7 @@ type Props = {
   children?: ReactNode;
   footer?: ReactNode;
   onClose?: () => void;
+  constrainHeight?: boolean;
 };
 
 export default function ModalContainer({
@@ -15,6 +16,7 @@ export default function ModalContainer({
   children,
   footer,
   onClose,
+  constrainHeight = false,
 }: Props) {
   return (
     <Modal
@@ -24,9 +26,20 @@ export default function ModalContainer({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.content}>
+        <View
+          testID="modal-content"
+          style={[
+            styles.content,
+            constrainHeight && styles.contentConstrained,
+          ]}
+        >
           {title && <Text style={styles.title}>{title}</Text>}
-          <View style={styles.body}>{children}</View>
+          <View
+            testID="modal-body"
+            style={[styles.body, constrainHeight && styles.bodyConstrained]}
+          >
+            {children}
+          </View>
           {footer}
         </View>
       </View>
@@ -56,5 +69,11 @@ const styles = StyleSheet.create({
   },
   body: {
     gap: 12,
+  },
+  contentConstrained: {
+    maxHeight: "90%",
+  },
+  bodyConstrained: {
+    flexShrink: 1,
   },
 });

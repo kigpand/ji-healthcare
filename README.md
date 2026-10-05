@@ -1,51 +1,84 @@
 # Ji Healthcare
 
-Expo + React Native 기반의 운동 루틴/기록 앱입니다.
+개인 운동 루틴을 구성하고 수행 기록을 관리하며, 최근 기록과 운동 환경을 바탕으로 AI 추천을 받을 수 있는 React Native 앱입니다.
 
-## 프로젝트 상태
-
-- Status: In Progress (WIP)
-- 현재는 핵심 기능 구현/정리 단계이며 UI/기능이 계속 업데이트됩니다.
+이 프로젝트는 개인 사용을 목적으로 만들었습니다. 루틴 실행 중 앱이 백그라운드로 전환되거나 날짜가 바뀌는 실제 모바일 환경에서도 기록과 타이머가 정확하게 동작하도록 데이터 보존과 회귀 검증에 중점을 두었습니다.
 
 ## 주요 기능
 
-- 루틴 조회 및 카테고리별 필터링
-- 루틴 등록 (세트/무게/유튜브 링크 포함)
-- 운동 진행 화면 (세트 카운트, 휴식 타이머, 완료 처리)
-- 운동 기록 조회 및 기간별 차트
-- 카테고리 추가/보관/복원/삭제
+- 카테고리별 운동 루틴 등록·수정·조회
+- 세트 진행, 세트 추가·삭제·완료 취소, 실제 무게·반복 횟수 입력, 휴식 타이머, 완료 기록 저장
+- 완료 당시 운동 항목과 세트별 무게·반복 횟수 상세 조회
+- 기간별 운동 기록과 차트 조회
+- 사용하지 않는 카테고리 보관·복원
+- 목표, 운동 장소, 시간, 장비를 반영한 AI 운동 추천
+- 기존 루틴 추천, 새 루틴 초안 편집·등록, 휴식 제안
+
+## 기술적 문제 해결
+
+### 로컬 데이터 보존
+
+SQLite 스키마를 버전별 마이그레이션으로 관리합니다. DB v3에서는 카테고리 보관 상태를, v4에서는 완료 기록의 운동 항목 스냅샷을 추가했고, v5에서는 기존 루틴의 유효하지 않은 세트 수를 보정합니다. v6에서는 완료 시점의 세트별 무게를 보존하고, v7에서는 선택 입력한 반복 횟수를 함께 저장합니다. 운동 시작 시 계획 무게를 기본값으로 사용하며 사용자가 세트마다 조정할 수 있습니다. 기존 기록의 반복 횟수는 비어 있는 상태로 유지합니다. 기존 루틴, 기록, AI 코치 설정을 유지하도록 트랜잭션과 업그레이드 경로를 검증했습니다.
+
+### 모바일 생명주기 대응
+
+휴식 타이머는 단순 interval 횟수가 아니라 종료 시각을 기준으로 남은 시간을 계산합니다. 앱이 잠금 또는 백그라운드 상태에 머문 뒤 복귀해도 실제 경과 시간이 반영됩니다. 날짜 기반 통계도 앱 복귀와 자정 경계에서 현재 로컬 날짜로 갱신합니다.
+
+### 기록 중복과 화면 이탈 방지
+
+운동 완료 기록을 저장하는 동안 중복 요청과 화면 이탈을 차단합니다. 저장 실패 후에는 사용자가 머무르거나 기록을 포기하고 나갈 수 있으며, 재시도 과정에서도 같은 기록이 중복 생성되지 않도록 검증합니다.
+
+### AI 호출 경계
+
+앱은 Cloudflare Worker를 통해 OpenAI Responses API를 호출합니다. OpenAI API 키는 Worker Secret에만 저장하며, Worker는 요청 크기, 호출 빈도, 입력과 구조화된 응답을 검증합니다. AI가 만든 새 루틴은 자동 저장하지 않고 사용자가 검토·수정한 뒤 명시적으로 등록합니다.
+
+```mermaid
+flowchart LR
+    App[Expo 앱] -->|루틴·주간 기록·설정| Worker[Cloudflare Worker]
+    Worker -->|검증된 요청| OpenAI[OpenAI Responses API]
+    OpenAI -->|구조화된 추천| Worker
+    Worker -->|기존 루틴 / 새 초안 / 휴식| App
+    App <--> SQLite[(로컬 SQLite)]
+```
 
 ## 기술 스택
 
-- Expo 54, React Native 0.81, TypeScript
-- expo-router (파일 기반 라우팅)
-- @tanstack/react-query (앱 데이터 캐시)
-- expo-sqlite (로컬 데이터 저장/조회)
-- ji-type-schema (입력 정규화/유효성 검사)
+| 영역 | 기술 |
+| --- | --- |
+| 앱 | Expo 57, React Native 0.86, React 19, TypeScript 6 |
+| 라우팅·상태 | Expo Router, TanStack Query |
+| 로컬 데이터 | Expo SQLite, 버전형 마이그레이션 |
+| 입력 검증 | ji-type-schema, 서비스 경계 검증 |
+| AI 백엔드 | Cloudflare Workers, OpenAI Responses API |
+| 품질 | Jest, jest-expo, ESLint, TypeScript, GitHub Actions |
+| 빌드 | EAS Build, Android/iOS JS export 검사 |
 
-## 시작하기
+## 구조
 
-### 1) 요구사항
+```text
+app/          화면과 라우트
+components/   재사용 UI
+hooks/        화면 상태와 사용자 동작
+schema/       입력 정규화와 유효성 검사
+service/      SQLite 및 Worker 접근
+lib/          데이터베이스 초기화와 마이그레이션
+worker/       AI 요청 검증과 OpenAI 호출
+tests/        정상·경계·실패 회귀 테스트
+```
+
+화면은 렌더링, hooks는 상태와 동작, schema는 검증, service와 `lib/database.ts`는 데이터 접근을 담당합니다.
+
+## 실행 방법
+
+### 요구사항
 
 - Node.js 22.17.0 (`.nvmrc` 기준)
-
-### 2) 설치
-
-```bash
-npm install
-```
-
-패키지 매니저는 `npm` 기준으로 관리합니다.
-
-로컬 저장소를 사용하려면 `expo-sqlite`가 필요합니다. 새 환경에서는 아래처럼 Expo 권장 방식으로 설치해주세요.
+- npm
+- iOS 또는 Android 개발 환경
 
 ```bash
-npx expo install expo-sqlite
-```
-
-### 3) 실행
-
-```bash
+npm ci
+cp .env.example .env
 npm run start
 ```
 
@@ -57,85 +90,59 @@ npm run ios
 npm run web
 ```
 
-### 4) 린트
+## AI 코치 로컬 설정
+
+개인용 Worker 비밀값 파일을 준비합니다. 실제 값은 Git에 포함하지 않습니다.
 
 ```bash
-npm run lint
+cp worker/.dev.vars.example worker/.dev.vars
+npm run worker:dev
 ```
 
-## 환경 설정
+앱의 `.env`에는 로컬 Worker 주소와 Worker에 설정한 개인 접근 토큰을 입력합니다. 이 토큰 방식은 개인 기기 사용을 위한 호출 구분 장치이며 다중 사용자 인증을 제공하지 않습니다. 자세한 설정과 데이터 제한은 [AI 운동 코치 문서](./docs/ai-workout-coach.md)를 참고하세요.
 
-현재 서비스 계층은 로컬 SQLite 테이블을 직접 조회합니다.
-
-- `categories`
-- `routines`
-- `routine_items`
-- `records`
-
-사용하지 않는 카테고리는 보관할 수 있으며 연결된 루틴과 기록은 유지됩니다. 연결된 데이터가 없는 보관 카테고리만 영구 삭제할 수 있습니다.
-
-## 프로젝트 구조
-
-```text
-app/                 # 라우트(화면) 계층
-components/          # UI 컴포넌트
-hooks/               # ViewModel/Query/Mutation 훅
-service/             # API 호출 계층
-schema/              # ji-type-schema 스키마/입력 검증
-interface/           # 타입 정의
-utils/               # 공통 유틸
-constants/           # 상수
-```
-
-## 에이전트 작업 및 검증
-
-공통 규칙은 [AGENTS.md](./AGENTS.md), 개발·리뷰·테스트·배포 절차는
-[하네스 가이드](./docs/harness/README.md)를 참고하세요.
+## 검증
 
 ```bash
-npm run check       # 린트, 타입 검사, 단위 테스트
-npm run test:ci     # 커버리지 포함 테스트
+npm run check       # 린트, 타입 검사, 단위·회귀 테스트
+npm run test:ci     # 커버리지 수집
 npm run build:check # Android/iOS JS 번들 검사
 ```
 
-GitHub CI는 push/PR마다 검증합니다. EAS 빌드는 수동 실행하며,
-환경별 EXPO_TOKEN·서명 자격 증명 설정은 배포 가이드에 설명되어 있습니다.
+자동 테스트는 다음과 같은 경계 상황을 포함합니다.
 
-## 아키텍처 가이드
+- 소수점 무게 입력 보존
+- 앱 백그라운드 전환 후 휴식 시간 계산
+- 기록 저장 실패·재시도·화면 이탈
+- 월말·연말·자정 전후 날짜 갱신
+- 카테고리 보관·복원과 참조 데이터 보호
+- SQLite v2 → v7 마이그레이션 롤백과 데이터 보존
+- AI 요청·응답 계약과 Worker 오류 처리
 
-MVVM에 가까운 구조를 지향합니다.
+GitHub Actions는 push와 PR에서 설치, 린트, 타입 검사, 테스트, Android/iOS JS export를 실행합니다. EAS 네이티브 빌드는 수동 워크플로로 분리되어 있습니다.
 
-- View: `app/*`, `components/*`
-- ViewModel: `hooks/use*ViewModel.ts` (예: `hooks/useAddRoutineViewModel.ts`)
-- Model/Data: `service/*`, `schema/*`, `interface/*`, `lib/database.ts`
+## 현재 범위와 한계
 
-화면은 렌더링에 집중하고, 상태/액션/검증 로직은 훅으로 분리합니다. 데이터 접근은 `service/*`에서 로컬 SQLite로 처리합니다.
+- 개인 기기 사용을 전제로 하며 회원가입과 다중 사용자 인증은 구현하지 않았습니다.
+- 운동 기록은 입력한 세트별 무게와 반복 횟수를 저장합니다. 통증과 회복 상태는 포함하지 않습니다.
+- 실제 기기 SQLite 업그레이드, 알림, 장시간 백그라운드 동작은 릴리스 전 수동 확인이 필요합니다.
+- 자동 검사는 네이티브 스토어 빌드와 실제 기기 동작을 대신하지 않습니다.
 
-## 유효성 검사 정책
-
-- `ji-type-schema`를 사용해 입력값을 정규화(`trim`, 숫자 변환 등) 후 검증합니다.
-- 현재 등록(create) 흐름 중심으로 적용되어 있습니다.
-- 예시 파일:
-  - `schema/routine.schema.ts`
-  - `schema/category.schema.ts`
-  - `service/routineService.ts`
-  - `service/categoryService.ts`
-
-## Current UI (WIP)
+## 화면
 
 <p align="center">
-  <img src="./screenshots/1.png" alt="Screen 1 (WIP)" width="180" />
-  <img src="./screenshots/2.png" alt="Screen 2 (WIP)" width="180" />
-  <img src="./screenshots/3.png" alt="Screen 3 (WIP)" width="180" />
+  <img src="./screenshots/1.png" alt="Ji Healthcare 화면 1" width="180" />
+  <img src="./screenshots/2.png" alt="Ji Healthcare 화면 2" width="180" />
+  <img src="./screenshots/3.png" alt="Ji Healthcare 화면 3" width="180" />
 </p>
 <p align="center">
-  <img src="./screenshots/4.png" alt="Screen 4 (WIP)" width="180" />
-  <img src="./screenshots/5.png" alt="Screen 5 (WIP)" width="180" />
+  <img src="./screenshots/4.png" alt="Ji Healthcare 화면 4" width="180" />
+  <img src="./screenshots/5.png" alt="Ji Healthcare 화면 5" width="180" />
 </p>
 
-## Roadmap
+## 작업 및 배포 문서
 
-- 루틴/카테고리 수정(편집) UX 고도화
-- 입력 유효성 검사 범위 확장 (수정/기타 입력 경로)
-- 에러/로딩 상태 UX 일관화
-- 테스트 코드 및 문서 보강
+- [프로젝트 하네스](./docs/harness/README.md)
+- [테스트 절차와 기기 시나리오](./docs/harness/testing.md)
+- [EAS 배포 절차](./docs/harness/deployment.md)
+- [저장소 작업 규칙](./AGENTS.md)

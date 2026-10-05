@@ -32,6 +32,11 @@ export default function Play() {
     defaultTime,
     currentRoutineIndex,
     counts,
+    setTargets,
+    setWeights,
+    setReps,
+    weightError,
+    repsError,
     finished,
     totalRoutines,
     isTimerModal,
@@ -40,6 +45,11 @@ export default function Play() {
     recordSaving,
     recordSaveFailed,
     handleCompleteSet,
+    handleSetWeightChange,
+    handleSetRepsChange,
+    handleAddSet,
+    handleRemoveSet,
+    handleUndoLastSet,
     handleStartNextSet,
     handleRetrySaveRecord,
   } = useRoutineRunner();
@@ -66,6 +76,7 @@ export default function Play() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>{routineDetail.title}</Text>
         <Text style={styles.subtitle}>세트 사이 휴식: {defaultTime}초</Text>
@@ -80,7 +91,28 @@ export default function Play() {
               finished={finished}
               currentRoutineIndex={currentRoutineIndex}
               totalRoutines={totalRoutines}
+              setCount={setTargets[index] ?? routine.set}
+              currentSetWeight={
+                index === currentRoutineIndex
+                  ? setWeights[index]?.[counts[index] ?? 0]
+                  : undefined
+              }
+              currentSetReps={
+                index === currentRoutineIndex
+                  ? setReps[index]?.[counts[index] ?? 0]
+                  : undefined
+              }
+              weightError={
+                index === currentRoutineIndex ? weightError : null
+              }
+              repsError={index === currentRoutineIndex ? repsError : null}
               handleCompleteSet={handleCompleteSet}
+              onChangeSetWeight={handleSetWeightChange}
+              onChangeSetReps={handleSetRepsChange}
+              onAddSet={handleAddSet}
+              onRemoveSet={handleRemoveSet}
+              canUndoSet={counts.some((count) => count > 0)}
+              onUndoSet={handleUndoLastSet}
               onPressVideo={openVideo}
             />
           );
