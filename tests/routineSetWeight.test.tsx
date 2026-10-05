@@ -5,14 +5,15 @@ import { scheduleRestTimerNotification } from "@/service/notificationService";
 const TestRenderer = require("react-test-renderer");
 const { act } = TestRenderer;
 const mockSave = jest.fn().mockResolvedValue(true);
-const mockRoutine = {
+const createMockRoutine = () => ({
   id: 1,
   title: "하체",
   categoryId: 1,
   category: "하체",
   createdAt: "2026-09-01T00:00:00.000Z",
   routine: [{ title: "스쿼트", set: 2, kg: 20 }],
-};
+});
+let mockRoutine = createMockRoutine();
 
 jest.mock("@/hooks/queries/useRoutine", () => ({
   useRoutineDetail: () => ({ data: mockRoutine, isLoading: false, isError: false }),
@@ -37,6 +38,7 @@ function Probe() {
 }
 
 beforeEach(() => {
+  mockRoutine = createMockRoutine();
   mockSave.mockClear();
   (scheduleRestTimerNotification as jest.Mock).mockClear();
   act(() => {
@@ -207,4 +209,65 @@ test("세트 완료를 빠르게 연속 실행해도 휴식 알림을 한 번만
 
   expect(model.isTimerModal).toBe(true);
   expect(scheduleRestTimerNotification).toHaveBeenCalledTimes(1);
+});
+
+test("최근 완료 세트를 한 번만 취소하고 기존 입력값을 다시 수정한다", () => {
+  act(() => {
+    model.handleSetWeightChange("22.5");
+    model.handleSetRepsChange("10");
+  });
+  act(() => {
+    model.handleCompleteSet();
+  });
+  act(() => {
+    model.handleStartNextSet();
+  });
+  expect(model.counts).toEqual([1]);
+
+  act(() => {
+    model.handleUndoLastSet();
+    model.handleUndoLastSet();
+  });
+  expect(model.counts).toEqual([0]);
+  expect(model.currentRoutineIndex).toBe(0);
+  expect(model.setWeights[0][0]).toBe("22.5");
+  expect(model.setReps[0][0]).toBe("10");
+
+  act(() => {
+    model.handleSetWeightChange("20");
+    model.handleSetRepsChange("12");
+  });
+  expect(model.setWeights[0][0]).toBe("20");
+  expect(model.setReps[0][0]).toBe("12");
+});
+
+test("다음 운동으로 이동한 직후 직전 운동의 마지막 세트를 취소한다", () => {
+  act(() => {
+    renderer.unmount();
+  });
+  mockRoutine = {
+    ...createMockRoutine(),
+    routine: [
+      { title: "스쿼트", set: 1, kg: 20 },
+      { title: "런지", set: 1, kg: 10 },
+    ],
+  };
+  act(() => {
+    renderer = TestRenderer.create(<Probe />);
+  });
+
+  act(() => {
+    model.handleCompleteSet();
+  });
+  act(() => {
+    model.handleStartNextSet();
+  });
+  expect(model.currentRoutineIndex).toBe(1);
+  expect(model.counts).toEqual([1, 0]);
+
+  act(() => {
+    model.handleUndoLastSet();
+  });
+  expect(model.currentRoutineIndex).toBe(0);
+  expect(model.counts).toEqual([0, 0]);
 });

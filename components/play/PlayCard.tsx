@@ -18,6 +18,8 @@ type Props = {
   onChangeSetReps?: (value: string) => void;
   onAddSet?: () => void;
   onRemoveSet?: () => void;
+  canUndoSet?: boolean;
+  onUndoSet?: () => void;
   onPressVideo?: (link: string) => void;
 };
 
@@ -38,6 +40,8 @@ export default function PlayCard({
   onChangeSetReps,
   onAddSet,
   onRemoveSet,
+  canUndoSet = false,
+  onUndoSet,
   onPressVideo,
 }: Props) {
   const count = counts[index] ?? 0;
@@ -125,6 +129,15 @@ export default function PlayCard({
             >
               <Text style={styles.setActionText}>마지막 세트 삭제</Text>
             </Pressable>
+            {canUndoSet ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.setActionButton}
+                onPress={onUndoSet}
+              >
+                <Text style={styles.setActionText}>이전 세트 완료 취소</Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       ) : null}

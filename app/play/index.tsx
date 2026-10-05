@@ -49,6 +49,7 @@ export default function Play() {
     handleSetRepsChange,
     handleAddSet,
     handleRemoveSet,
+    handleUndoLastSet,
     handleStartNextSet,
     handleRetrySaveRecord,
   } = useRoutineRunner();
@@ -110,6 +111,8 @@ export default function Play() {
               onChangeSetReps={handleSetRepsChange}
               onAddSet={handleAddSet}
               onRemoveSet={handleRemoveSet}
+              canUndoSet={counts.some((count) => count > 0)}
+              onUndoSet={handleUndoLastSet}
               onPressVideo={openVideo}
             />
           );

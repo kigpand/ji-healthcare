@@ -49,6 +49,10 @@ type RoutineRunnerAction =
   | { type: "ADD_SET"; payload: { routineIndex: number; defaultWeight: string } }
   | { type: "REMOVE_SET"; payload: { routineIndex: number; minimum: number } }
   | {
+      type: "UNDO_LAST_SET";
+      payload: { routineIndex: number; expectedCount: number };
+    }
+  | {
       type: "UPDATE_SET_WEIGHT";
       payload: { routineIndex: number; setIndex: number; value: string };
     }
@@ -164,6 +168,24 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
             ? reps.slice(0, -1)
             : reps
         ),
+      };
+    case "UNDO_LAST_SET":
+      if (
+        state.finished ||
+        state.isTimerModal ||
+        state.counts[action.payload.routineIndex] !==
+          action.payload.expectedCount
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        currentRoutineIndex: action.payload.routineIndex,
+        counts: state.counts.map((count, index) =>
+          index === action.payload.routineIndex ? Math.max(0, count - 1) : count
+        ),
+        weightError: null,
+        repsError: null,
       };
     case "UPDATE_SET_WEIGHT":
       return {
@@ -398,6 +420,24 @@ export function useRoutineRunner() {
     });
   }, [counts, currentExercise, currentRoutineIndex, finished]);
 
+  const handleUndoLastSet = useCallback(() => {
+    if (finished || isTimerModal) return;
+
+    let routineIndex = Math.min(currentRoutineIndex, counts.length - 1);
+    while (routineIndex >= 0 && (counts[routineIndex] ?? 0) <= 0) {
+      routineIndex -= 1;
+    }
+    if (routineIndex < 0) return;
+
+    dispatch({
+      type: "UNDO_LAST_SET",
+      payload: {
+        routineIndex,
+        expectedCount: counts[routineIndex],
+      },
+    });
+  }, [counts, currentRoutineIndex, finished, isTimerModal]);
+
   const handleCompleteSet = () => {
     if (!currentExercise || finished) {
       return;
@@ -616,6 +656,7 @@ export function useRoutineRunner() {
     handleSetRepsChange,
     handleAddSet,
     handleRemoveSet,
+    handleUndoLastSet,
     handleStartNextSet,
     handleRetrySaveRecord,
   };
