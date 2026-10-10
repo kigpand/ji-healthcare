@@ -1,11 +1,14 @@
 import ModalContainer from "@/components/modal/ModalContainer";
 import { PATH } from "@/constants/path";
+import { useDeleteRecord } from "@/hooks/mutate/useDeleteRecord";
 import { useRecordDetail } from "@/hooks/queries/useRecord";
 import { IRecord } from "@/interface/record";
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
+import { useRef } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,57 +29,71 @@ export default function RecordCardModal({
   const router = useRouter();
   const { width, fontScale } = useWindowDimensions();
   const detailQuery = useRecordDetail(selectedRecord?._id);
+  const deleteRecordMutation = useDeleteRecord();
+  const deletePhaseRef = useRef<"idle" | "confirming" | "deleting">("idle");
   const detail = detailQuery.data;
-  const compactActions = width < 360 || fontScale > 1.2;
+  const compactActions = width < 500 || fontScale > 1.2;
+  const isDeleting = deleteRecordMutation.isPending;
+
+  function handleDeleteRecord() {
+    if (!selectedRecord || isDeleting || deletePhaseRef.current !== "idle") {
+      return;
+    }
+
+    deletePhaseRef.current = "confirming";
+    const recordId = selectedRecord._id;
+
+    Alert.alert(
+      "운동 기록 삭제",
+      "이 기록과 세트별 상세 내역을 삭제하시겠습니까?",
+      [
+        {
+          text: "취소",
+          style: "cancel",
+          onPress: () => {
+            deletePhaseRef.current = "idle";
+          },
+        },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: () => {
+            if (deletePhaseRef.current !== "confirming") return;
+            deletePhaseRef.current = "deleting";
+            deleteRecordMutation
+              .mutateAsync(recordId)
+              .then(() => handleChangeRecord(null))
+              .catch((error) => {
+                console.error("Failed to delete workout record", error);
+              })
+              .finally(() => {
+                deletePhaseRef.current = "idle";
+              });
+          },
+        },
+      ],
+      {
+        cancelable: true,
+        onDismiss: () => {
+          if (deletePhaseRef.current === "confirming") {
+            deletePhaseRef.current = "idle";
+          }
+        },
+      }
+    );
+  }
+
+  function handleClose() {
+    if (isDeleting || deletePhaseRef.current !== "idle") return;
+    handleChangeRecord(null);
+  }
 
   return (
     <ModalContainer
       visible={!!selectedRecord}
-      onClose={() => handleChangeRecord(null)}
+      onClose={handleClose}
       title="운동 기록 상세"
       constrainHeight
-      footer={
-        <View
-          testID="record-detail-actions"
-          style={[
-            styles.modalButtons,
-            compactActions && styles.modalButtonsCompact,
-          ]}
-        >
-          <Pressable
-            style={[
-              styles.modalButton,
-              styles.modalCancel,
-              compactActions && styles.modalButtonCompact,
-            ]}
-            onPress={() => handleChangeRecord(null)}
-          >
-            <Text style={styles.modalButtonText}>닫기</Text>
-          </Pressable>
-          {selectedRecord?.routineId ? (
-            <Pressable
-              style={[
-                styles.modalButton,
-                styles.modalConfirm,
-                compactActions && styles.modalButtonCompact,
-              ]}
-              onPress={() => {
-                router.push({
-                  pathname: PATH.play,
-                  params: {
-                    routineId: selectedRecord.routineId.toString(),
-                  },
-                });
-                handleChangeRecord(null);
-              }}
-            >
-              <Text style={[styles.modalButtonText, styles.modalConfirmText]}>
-                이 루틴 다시 시작
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
-      }
     >
       <ScrollView
         testID="record-detail-body"
@@ -137,6 +154,68 @@ export default function RecordCardModal({
             상세 운동 항목이 없는 이전 기록입니다.
           </Text>
         )}
+        <View
+          testID="record-detail-actions"
+          style={[
+            styles.modalButtons,
+            compactActions && styles.modalButtonsCompact,
+          ]}
+        >
+          <Pressable
+            style={[
+              styles.modalButton,
+              styles.modalCancel,
+              compactActions && styles.modalButtonCompact,
+              isDeleting && styles.modalButtonDisabled,
+            ]}
+            onPress={handleClose}
+            disabled={isDeleting}
+          >
+            <Text style={styles.modalButtonText}>
+              {isDeleting ? "삭제 중" : "닫기"}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={[
+              styles.modalButton,
+              styles.modalDelete,
+              compactActions && styles.modalButtonCompact,
+              isDeleting && styles.modalButtonDisabled,
+            ]}
+            onPress={handleDeleteRecord}
+            disabled={isDeleting}
+          >
+            <Text style={[styles.modalButtonText, styles.modalDeleteText]}>
+              기록 삭제
+            </Text>
+          </Pressable>
+          {selectedRecord?.routineId ? (
+            <Pressable
+              style={[
+                styles.modalButton,
+                styles.modalConfirm,
+                compactActions && styles.modalButtonCompact,
+                isDeleting && styles.modalButtonDisabled,
+              ]}
+              onPress={() => {
+                if (isDeleting || deletePhaseRef.current !== "idle") return;
+                router.push({
+                  pathname: PATH.play,
+                  params: {
+                    routineId: selectedRecord.routineId.toString(),
+                  },
+                });
+                handleChangeRecord(null);
+              }}
+              disabled={isDeleting}
+            >
+              <Text style={[styles.modalButtonText, styles.modalConfirmText]}>
+                이 루틴 다시 시작
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       </ScrollView>
     </ModalContainer>
   );
@@ -211,6 +290,15 @@ const styles = StyleSheet.create({
   },
   modalConfirm: {
     backgroundColor: "#2563eb",
+  },
+  modalDelete: {
+    backgroundColor: "#fee2e2",
+  },
+  modalDeleteText: {
+    color: "#dc2626",
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
   modalButtonText: {
     fontSize: 16,

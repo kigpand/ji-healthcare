@@ -421,3 +421,52 @@ test.each(["", "0", "-1", "1.5", "abc"])(
     );
   }
 );
+
+test("완료 기록 삭제 시 운동 항목과 세트 스냅샷도 함께 삭제한다", async () => {
+  const { initializeDatabase } = require("@/lib/database");
+  const { addRecord, deleteRecord, getRecordDetail } = require("@/service/recordService");
+  await initializeDatabase();
+  await addRecord({
+    id: 1,
+    title: "하체 루틴",
+    categoryId: 1,
+    category: "하체",
+    createdAt: "2026-09-01T00:00:00.000Z",
+    routine: [
+      {
+        title: "스쿼트",
+        kg: 20,
+        set: 2,
+        setKgs: [20, 22.5],
+        setReps: [12, 10],
+      },
+    ],
+  });
+
+  await expect(deleteRecord("2")).resolves.toBe(true);
+  await expect(getRecordDetail("2")).resolves.toBeNull();
+  expect(sqlite.prepare("SELECT COUNT(*) AS count FROM records").get().count).toBe(1);
+  expect(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM record_items").get().count
+  ).toBe(0);
+  expect(
+    sqlite.prepare("SELECT COUNT(*) AS count FROM record_sets").get().count
+  ).toBe(0);
+});
+
+test.each(["", "0", "-1", "1.5", "abc"])(
+  "잘못된 기록 ID %p의 삭제를 거부한다",
+  async (recordId) => {
+    const { deleteRecord } = require("@/service/recordService");
+    await expect(deleteRecord(recordId)).rejects.toThrow(
+      "운동 기록 정보가 올바르지 않습니다."
+    );
+  }
+);
+
+test("존재하지 않는 완료 기록 삭제를 실패로 처리한다", async () => {
+  const { deleteRecord } = require("@/service/recordService");
+  await expect(deleteRecord("999")).rejects.toThrow(
+    "삭제할 운동 기록을 찾을 수 없습니다."
+  );
+});
