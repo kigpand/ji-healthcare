@@ -22,6 +22,7 @@ type RoutineRunnerState = {
   isTimerRunning: boolean;
   timerEndsAt: number | null;
   finished: boolean;
+  saveConfirmed: boolean;
   recordAdded: boolean;
   recordSaving: boolean;
   recordSaveFailed: boolean;
@@ -64,6 +65,11 @@ type RoutineRunnerAction =
   | { type: "SET_REPS_ERROR"; payload: string | null }
   | { type: "MOVE_NEXT_ROUTINE" }
   | { type: "FINISH" }
+  | { type: "CONFIRM_SAVE" }
+  | {
+      type: "EDIT_COMPLETION";
+      payload: { routineIndex: number; expectedCount: number };
+    }
   | { type: "SET_RECORD_ADDED"; payload: boolean }
   | { type: "SET_RECORD_SAVING"; payload: boolean }
   | { type: "SET_RECORD_SAVE_FAILED"; payload: boolean };
@@ -84,6 +90,7 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         isTimerRunning: false,
         timerEndsAt: null,
         finished: false,
+        saveConfirmed: false,
         recordAdded: false,
         recordSaving: false,
         recordSaveFailed: false,
@@ -229,6 +236,30 @@ function runnerReducer(state: RoutineRunnerState, action: RoutineRunnerAction) {
         ...state,
         finished: true,
       };
+    case "CONFIRM_SAVE":
+      if (!state.finished || state.saveConfirmed) return state;
+      return { ...state, saveConfirmed: true };
+    case "EDIT_COMPLETION":
+      if (
+        !state.finished ||
+        state.saveConfirmed ||
+        state.recordSaving ||
+        state.recordAdded ||
+        state.counts[action.payload.routineIndex] !==
+          action.payload.expectedCount
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        currentRoutineIndex: action.payload.routineIndex,
+        counts: state.counts.map((count, index) =>
+          index === action.payload.routineIndex ? Math.max(0, count - 1) : count
+        ),
+        finished: false,
+        weightError: null,
+        repsError: null,
+      };
     case "SET_RECORD_ADDED":
       return {
         ...state,
@@ -262,6 +293,7 @@ const initialRunnerState: RoutineRunnerState = {
   isTimerRunning: false,
   timerEndsAt: null,
   finished: false,
+  saveConfirmed: false,
   recordAdded: false,
   recordSaving: false,
   recordSaveFailed: false,
@@ -299,6 +331,7 @@ export function useRoutineRunner() {
     isTimerRunning,
     timerEndsAt,
     finished,
+    saveConfirmed,
     recordAdded,
     recordSaving,
     recordSaveFailed,
@@ -562,9 +595,33 @@ export function useRoutineRunner() {
     };
   }, [routineDetail, setReps, setTargets, setWeights]);
 
+  const handleConfirmSave = useCallback(() => {
+    if (!finished || saveConfirmed) return;
+    dispatch({ type: "CONFIRM_SAVE" });
+  }, [finished, saveConfirmed]);
+
+  const handleEditLastSet = useCallback(() => {
+    if (!finished || saveConfirmed || recordSaving || recordAdded) return;
+
+    let routineIndex = counts.length - 1;
+    while (routineIndex >= 0 && (counts[routineIndex] ?? 0) <= 0) {
+      routineIndex -= 1;
+    }
+    if (routineIndex < 0) return;
+
+    dispatch({
+      type: "EDIT_COMPLETION",
+      payload: {
+        routineIndex,
+        expectedCount: counts[routineIndex],
+      },
+    });
+  }, [counts, finished, recordAdded, recordSaving, saveConfirmed]);
+
   useEffect(() => {
     if (
       !finished ||
+      !saveConfirmed ||
       !completedRoutine ||
       recordAdded ||
       recordSaving ||
@@ -591,6 +648,7 @@ export function useRoutineRunner() {
       });
   }, [
     finished,
+    saveConfirmed,
     completedRoutine,
     recordAdded,
     recordSaving,
@@ -599,7 +657,7 @@ export function useRoutineRunner() {
   ]);
 
   const handleRetrySaveRecord = useCallback(() => {
-    if (!finished || !completedRoutine || recordSaving || recordAdded || recordSaveInFlight.current) {
+    if (!finished || !saveConfirmed || !completedRoutine || recordSaving || recordAdded || recordSaveInFlight.current) {
       return;
     }
 
@@ -619,7 +677,7 @@ export function useRoutineRunner() {
         recordSaveInFlight.current = false;
         dispatch({ type: "SET_RECORD_SAVING", payload: false });
       });
-  }, [finished, completedRoutine, recordSaving, recordAdded, addRecordMutation]);
+  }, [finished, saveConfirmed, completedRoutine, recordSaving, recordAdded, addRecordMutation]);
 
   useEffect(() => {
     if (!finished) {
@@ -645,6 +703,8 @@ export function useRoutineRunner() {
     weightError,
     repsError,
     finished,
+    saveConfirmed,
+    completedRoutine,
     totalRoutines,
     isTimerModal,
     countdown,
@@ -657,6 +717,8 @@ export function useRoutineRunner() {
     handleAddSet,
     handleRemoveSet,
     handleUndoLastSet,
+    handleConfirmSave,
+    handleEditLastSet,
     handleStartNextSet,
     handleRetrySaveRecord,
   };

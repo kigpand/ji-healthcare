@@ -72,6 +72,10 @@ test("세트별로 수정한 무게와 선택 입력한 반복 횟수를 완료 
   await act(async () => {
     model.handleCompleteSet();
   });
+  expect(mockSave).not.toHaveBeenCalled();
+  await act(async () => {
+    model.handleConfirmSave();
+  });
 
   expect(mockSave).toHaveBeenCalledTimes(1);
   expect(mockSave.mock.calls[0][0].routine[0]).toMatchObject({
@@ -152,6 +156,10 @@ test("운동 중 추가한 세트를 최종 구성과 함께 저장한다", asyn
   });
   await act(async () => {
     model.handleCompleteSet();
+  });
+  expect(mockSave).not.toHaveBeenCalled();
+  await act(async () => {
+    model.handleConfirmSave();
   });
 
   expect(mockSave).toHaveBeenCalledTimes(1);
@@ -270,4 +278,29 @@ test("다음 운동으로 이동한 직후 직전 운동의 마지막 세트를 
   });
   expect(model.currentRoutineIndex).toBe(0);
   expect(model.counts).toEqual([0, 0]);
+});
+
+test("완료 검토 단계에서는 저장하지 않고 마지막 세트 수정으로 돌아간다", () => {
+  act(() => {
+    model.handleCompleteSet();
+  });
+  act(() => {
+    model.handleStartNextSet();
+  });
+  act(() => {
+    model.handleCompleteSet();
+  });
+
+  expect(model.finished).toBe(true);
+  expect(model.saveConfirmed).toBe(false);
+  expect(mockSave).not.toHaveBeenCalled();
+
+  act(() => {
+    model.handleEditLastSet();
+    model.handleEditLastSet();
+  });
+  expect(model.finished).toBe(false);
+  expect(model.counts).toEqual([1]);
+  expect(model.setWeights[0]).toEqual(["20", "20"]);
+  expect(mockSave).not.toHaveBeenCalled();
 });

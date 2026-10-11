@@ -37,6 +37,8 @@ test("기록 저장 실패 후 연속 재시도와 성공 후 재시도로 중�
   try {
     await act(async () => { renderer = TestRenderer.create(<Probe />); });
     await act(async () => { model.handleCompleteSet(); });
+    expect(mockSave).not.toHaveBeenCalled();
+    await act(async () => { model.handleConfirmSave(); });
     expect(mockSave).toHaveBeenCalledTimes(1);
     expect(model!.recordSaveFailed).toBe(true);
     expect(model!.recordAdded).toBe(false);

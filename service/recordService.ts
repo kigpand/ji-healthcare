@@ -223,6 +223,25 @@ export async function getRecordDetail(recordId: string) {
   return { ...mapRecord(record), items } satisfies IRecordDetail;
 }
 
+export async function deleteRecord(recordId: string) {
+  const numericRecordId = Number(recordId);
+  if (!Number.isInteger(numericRecordId) || numericRecordId <= 0) {
+    throw new Error("운동 기록 정보가 올바르지 않습니다.");
+  }
+
+  const db = await getDatabase();
+  const result = await db.runAsync(
+    "DELETE FROM records WHERE id = ?",
+    numericRecordId
+  );
+
+  if (result.changes === 0) {
+    throw new Error("삭제할 운동 기록을 찾을 수 없습니다.");
+  }
+
+  return true;
+}
+
 function getDateDaysAgo(days: number, referenceDate: Date) {
   const fromDate = new Date(referenceDate);
   fromDate.setDate(fromDate.getDate() - days);

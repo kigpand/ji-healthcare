@@ -1,11 +1,13 @@
 import React from "react";
-import { Alert, Modal } from "react-native";
+import { Alert, Modal, ScrollView, StyleSheet, Text } from "react-native";
 import CompletionModal from "@/components/modal/CompletionModal";
 
 const TestRenderer = require("react-test-renderer");
 const { act } = TestRenderer;
 const mockDispatch = jest.fn();
 const mockRetry = jest.fn();
+const mockConfirm = jest.fn();
+const mockEdit = jest.fn();
 let mockPrevented = false;
 let mockOnRemove: (event: { data: { action: { type: string } } }) => void;
 const mockReplace = jest.fn(() => mockNavigate({ type: "REPLACE" }));
@@ -30,6 +32,17 @@ let renderer: ReturnType<typeof TestRenderer.create>;
 let alert: jest.SpyInstance;
 const defaults = {
   visible: true, recordAdded: false, recordSaving: false, recordSaveFailed: false,
+  saveConfirmed: true,
+  summary: {
+    id: 1,
+    title: "하체",
+    categoryId: 1,
+    category: "하체",
+    createdAt: "2026-09-01T00:00:00.000Z",
+    routine: [{ title: "스쿼트", set: 2, kg: 20, setKgs: [20, 22.5], setReps: [12, null] }],
+  },
+  onConfirmSave: mockConfirm,
+  onEditLastSet: mockEdit,
   onRetrySaveRecord: mockRetry,
 };
 
@@ -107,4 +120,49 @@ test("운동 완료 전에는 이탈을 차단하지 않는다", () => {
   render({ visible: false });
   act(() => { mockNavigate({ type: "GO_BACK" }); });
   expect(mockDispatch).toHaveBeenCalledWith({ type: "GO_BACK" });
+});
+
+test("저장 전 수행 내역을 표시하고 수정 또는 저장을 선택한다", () => {
+  render({ saveConfirmed: false });
+
+  const text = renderer.root
+    .findAllByType(Text)
+    .map((node: { props: { children: unknown } }) => node.props.children)
+    .flat(Infinity)
+    .join(" ");
+  expect(text.replace(/\s/g, "")).toContain("1세트·20kg·12회");
+  expect(text.replace(/\s/g, "")).toContain("2세트·22.5kg");
+
+  press("마지막 세트 수정");
+  expect(mockEdit).toHaveBeenCalledTimes(1);
+  press("기록 저장");
+  expect(mockConfirm).toHaveBeenCalledTimes(1);
+});
+
+test("좁은 화면과 큰 글꼴에서도 검토 버튼을 요약 영역 안에서 스크롤한다", () => {
+  render({ saveConfirmed: false });
+
+  const summary = renderer.root.findByProps({ testID: "completion-summary" });
+  expect(summary.findByProps({ testID: "completion-review-actions" })).toBeTruthy();
+
+  const editButton = button("마지막 세트 수정");
+  expect(StyleSheet.flatten(editButton.props.style)).toMatchObject({
+    maxWidth: "100%",
+    flexShrink: 1,
+  });
+  expect(StyleSheet.flatten(editButton.props.children.props.style)).toMatchObject({
+    flexShrink: 1,
+    textAlign: "center",
+  });
+});
+
+test.each([
+  ["저장 중", { recordSaving: true }],
+  ["저장 실패", { recordSaveFailed: true }],
+  ["저장 성공", { recordAdded: true }],
+])("%s 상태 내용을 제한 높이에서 스크롤할 수 있다", (_, props) => {
+  render(props);
+
+  const status = renderer.root.findByProps({ testID: "completion-status" });
+  expect(status.type).toBe(ScrollView);
 });

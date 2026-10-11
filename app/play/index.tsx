@@ -38,6 +38,8 @@ export default function Play() {
     weightError,
     repsError,
     finished,
+    saveConfirmed,
+    completedRoutine,
     totalRoutines,
     isTimerModal,
     countdown,
@@ -52,6 +54,8 @@ export default function Play() {
     handleUndoLastSet,
     handleStartNextSet,
     handleRetrySaveRecord,
+    handleConfirmSave,
+    handleEditLastSet,
   } = useRoutineRunner();
 
   if (isLoading) {
@@ -129,6 +133,10 @@ export default function Play() {
         recordAdded={recordAdded}
         recordSaving={recordSaving}
         recordSaveFailed={recordSaveFailed}
+        saveConfirmed={saveConfirmed}
+        summary={completedRoutine}
+        onConfirmSave={handleConfirmSave}
+        onEditLastSet={handleEditLastSet}
         onRetrySaveRecord={handleRetrySaveRecord}
       />
       <VideoModal
